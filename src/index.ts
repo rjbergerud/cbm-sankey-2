@@ -16,6 +16,7 @@ import { computeLinkPaths } from './render/PathGenerator';
 import { EventEmitter } from './interaction/EventEmitter';
 import { DragHandler } from './interaction/DragHandler';
 import { RotateHandler } from './interaction/RotateHandler';
+import { ResizeHandler } from './interaction/ResizeHandler';
 
 // Re-export types for library consumers
 export * from './core/types';
@@ -80,11 +81,13 @@ export function createSankey(
   // Interaction handlers (initialized after first render)
   let dragHandler: DragHandler | null = null;
   let rotateHandler: RotateHandler | null = null;
+  let resizeHandler: ResizeHandler | null = null;
 
   /**
    * Re-render the diagram
    */
   function render() {
+    console.log('[Sankey] render() called');
     // Compute node dimensions
     computedNodes = computeNodes(graph, options);
     
@@ -100,6 +103,7 @@ export function createSankey(
     
     // Update or initialize interaction handlers
     if (dragHandler) {
+      console.log('[Sankey] updating dragHandler');
       dragHandler.updateNodes(computedNodes);
     } else {
       dragHandler = new DragHandler(svg, computedNodes, {
@@ -120,10 +124,13 @@ export function createSankey(
     }
     
     if (rotateHandler) {
+      console.log('[Sankey] updating rotateHandler');
       rotateHandler.updateNodes(computedNodes);
     } else {
+      console.log('[Sankey] creating new rotateHandler');
       rotateHandler = new RotateHandler(svg, computedNodes, {
         onRotate: (node, newOrientation, layout) => {
+          console.log('[Sankey] onRotate callback fired for node:', node.id, 'new orientation:', newOrientation);
           // Update the graph node orientation
           const graphNode = graph.nodes.find(n => n.id === node.id);
           if (graphNode) {
@@ -134,6 +141,25 @@ export function createSankey(
           events.emit('layoutChange', layout);
         },
       });
+    }
+
+    if (resizeHandler) {
+      resizeHandler.updateNodes(computedNodes);
+    } else {
+      resizeHandler = new ResizeHandler(svg, computedNodes, {
+        onResize: (node, newLength) => {
+          // Update the graph node length
+          const graphNode = graph.nodes.find(n => n.id === node.id);
+          if (graphNode) {
+            graphNode.length = newLength;
+          }
+          // Re-render to update node and links
+          renderAfterDrag();
+        },
+        onResizeEnd: (node, layout) => {
+          events.emit('layoutChange', layout);
+        },
+      }, options);
     }
   }
   
@@ -152,9 +178,15 @@ export function createSankey(
     // Re-attach basic event listeners (hover/click)
     attachEventListeners();
     
-    // Update drag handler's node references
+    // Update handler node references
     if (dragHandler) {
       dragHandler.updateNodes(computedNodes);
+    }
+    if (rotateHandler) {
+      rotateHandler.updateNodes(computedNodes);
+    }
+    if (resizeHandler) {
+      resizeHandler.updateNodes(computedNodes);
     }
   }
   
@@ -171,6 +203,11 @@ export function createSankey(
       el.addEventListener('click', () => {
         const node = getNode(graph, nodeId);
         if (node) events.emit('nodeClick', node);
+      });
+      
+      // TEST: Add dblclick listener here to see if it fires
+      el.addEventListener('dblclick', () => {
+        console.log('[attachEventListeners] dblclick fired on node:', nodeId);
       });
       
       el.addEventListener('mouseenter', () => {
@@ -248,6 +285,7 @@ export function createSankey(
     destroy() {
       if (dragHandler) dragHandler.destroy();
       if (rotateHandler) rotateHandler.destroy();
+      if (resizeHandler) resizeHandler.destroy();
       events.clear();
       clearSVG(svg);
       svg.remove();

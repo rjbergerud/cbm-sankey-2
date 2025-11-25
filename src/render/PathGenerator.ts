@@ -27,7 +27,7 @@ function getAttachmentPoint(
   options: SankeyOptions
 ): AttachmentPoint {
   const length = node.length ?? options.nodeLength;
-  const nodeThickness = Math.max(node.thickness, 4);
+  const nodeThickness = Math.max(node.thickness, options.minNodeThickness);
   
   const isHorizontal = node.orientation === 0 || node.orientation === 180;
   const width = isHorizontal ? length : nodeThickness;
@@ -96,7 +96,8 @@ function getAttachmentPoint(
 function generateBezierPath(
   source: AttachmentPoint,
   target: AttachmentPoint,
-  curvature: number
+  curvature: number,
+  minCtrlDist: number
 ): string {
   const srcHalf = source.thickness / 2;
   const tgtHalf = target.thickness / 2;
@@ -118,9 +119,9 @@ function generateBezierPath(
   const t1x = target.x - tgtPerpX * tgtHalf;
   const t1y = target.y - tgtPerpY * tgtHalf;
   
-  // Control point distance
+  // Control point distance - use minimum to prevent path artifacts when nodes are close
   const dist = Math.sqrt((target.x - source.x) ** 2 + (target.y - source.y) ** 2);
-  const ctrlDist = Math.max(dist * curvature, 20);
+  const ctrlDist = Math.max(dist * curvature, minCtrlDist);
   
   // Control points
   const sc0x = s0x + source.dx * ctrlDist;
@@ -201,19 +202,24 @@ function perpendicular(v: Point): Point {
  * Generate a constant-width path by sampling a centerline bezier
  * and offsetting perpendicular at each sample point.
  * Uses smooth quadratic curves for better visual quality.
+ * 
+ * @param samples Number of points to sample along the centerline. Higher = smoother but more path data.
+ *                64 is a good balance for most cases.
  */
 function generateConstantWidthPath(
   source: AttachmentPoint,
   target: AttachmentPoint,
   curvature: number,
+  minCtrlDist: number,
   samples: number = 64
 ): string {
   const thickness = (source.thickness + target.thickness) / 2;
   const halfWidth = thickness / 2;
   
   // Define centerline bezier control points
+  // Use minimum control distance to prevent artifacts when nodes are close together
   const dist = Math.sqrt((target.x - source.x) ** 2 + (target.y - source.y) ** 2);
-  const ctrlDist = Math.max(dist * curvature, 20);
+  const ctrlDist = Math.max(dist * curvature, minCtrlDist);
   
   const p0: Point = { x: source.x, y: source.y };
   const p1: Point = { x: source.x + source.dx * ctrlDist, y: source.y + source.dy * ctrlDist };
@@ -304,15 +310,16 @@ function generateLinkPath(
   source: AttachmentPoint,
   target: AttachmentPoint,
   curvature: number,
+  minCtrlDist: number,
   style: PathStyle = 'constantWidth'
 ): string {
   switch (style) {
     case 'bezier':
-      return generateBezierPath(source, target, curvature);
+      return generateBezierPath(source, target, curvature, minCtrlDist);
     case 'constantWidth':
-      return generateConstantWidthPath(source, target, curvature);
+      return generateConstantWidthPath(source, target, curvature, minCtrlDist);
     default:
-      return generateConstantWidthPath(source, target, curvature);
+      return generateConstantWidthPath(source, target, curvature, minCtrlDist);
   }
 }
 
@@ -389,7 +396,13 @@ export function computeLinkPaths(
     const source = getAttachmentPoint(sourceNode, 'out', sourceOffset, linkThickness, options);
     const target = getAttachmentPoint(targetNode, 'in', targetOffset, linkThickness, options);
     
-    const path = generateLinkPath(source, target, options.linkCurvature, options.pathStyle);
+    const path = generateLinkPath(
+      source,
+      target,
+      options.linkCurvature,
+      options.minControlPointDistance,
+      options.pathStyle
+    );
     
     return {
       ...link,

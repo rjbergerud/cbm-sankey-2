@@ -41,10 +41,11 @@ export function renderNodes(
     const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     nodeGroup.setAttribute('class', `node node--${toClassName(node.id)}`);
     nodeGroup.setAttribute('data-node-id', node.id);
+    nodeGroup.setAttribute('data-orientation', String(node.orientation));
     
     // Calculate dimensions based on orientation
     const length = node.length ?? options.nodeLength;
-    const thickness = Math.max(node.thickness, 4); // minimum thickness for visibility
+    const thickness = Math.max(node.thickness, options.minNodeThickness);
     
     // Width/height depend on orientation
     const isHorizontal = node.orientation === 0 || node.orientation === 180;

@@ -13,6 +13,9 @@ export class RotateHandler {
   private nodes: ComputedNode[];
   private callbacks: RotateHandlerCallbacks;
   
+  // Store bound handlers for cleanup
+  private boundHandlers: Map<string, (e: Event) => void> = new Map();
+  
   constructor(
     svg: SVGSVGElement,
     nodes: ComputedNode[],
@@ -44,18 +47,27 @@ export class RotateHandler {
    * Re-attach listeners after DOM update
    */
   private reattachListeners(): void {
+    // Clear old handlers map (DOM elements are replaced, so no need to remove)
+    this.boundHandlers.clear();
+    
     const nodeElements = this.svg.querySelectorAll('.node');
+    console.log('[RotateHandler] reattachListeners called, found', nodeElements.length, 'nodes');
     
     nodeElements.forEach(el => {
       const nodeId = el.getAttribute('data-node-id');
       if (!nodeId) return;
       
-      // Double-click to rotate
-      el.addEventListener('dblclick', ((e: MouseEvent) => {
+      // Create bound handler for this node
+      const handler = (e: Event) => {
+        console.log('[RotateHandler] dblclick fired on node:', nodeId);
         e.preventDefault();
-        e.stopPropagation();
+        // Don't stopPropagation - let other handlers see the event
         this.rotateNode(nodeId);
-      }) as EventListener);
+      };
+      
+      this.boundHandlers.set(nodeId, handler);
+      el.addEventListener('dblclick', handler);
+      console.log('[RotateHandler] attached dblclick listener to node:', nodeId);
     });
   }
   
@@ -82,7 +94,7 @@ export class RotateHandler {
    * Clean up event listeners
    */
   destroy(): void {
-    // Event listeners are attached to elements that get replaced on re-render
-    // so we don't need explicit cleanup for those
+    // Clear handler references
+    this.boundHandlers.clear();
   }
 }

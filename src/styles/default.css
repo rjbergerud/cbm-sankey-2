@@ -56,3 +56,40 @@
   fill: #ff6b35;
   fill-opacity: 0.9;
 }
+
+/* Resize handle */
+.cbm-sankey .resize-handle {
+  fill: transparent;
+  stroke: none;
+  cursor: ew-resize;
+  opacity: 0;
+  pointer-events: none;  /* Don't capture events when invisible */
+  transition: opacity 0.15s ease, fill 0.15s ease;
+}
+
+.cbm-sankey .node:hover .resize-handle {
+  opacity: 1;
+  fill: rgba(0, 0, 0, 0.3);
+  pointer-events: auto;  /* Enable events when visible */
+}
+
+.cbm-sankey .resize-handle:hover {
+  fill: rgba(255, 107, 53, 0.6);
+}
+
+/* Vertical nodes need different cursor */
+.cbm-sankey .node[data-orientation="90"] .resize-handle,
+.cbm-sankey .node[data-orientation="270"] .resize-handle {
+  cursor: ns-resize;
+}
+
+.cbm-sankey .node.resizing rect {
+  stroke: #ff6b35;
+  stroke-width: 2px;
+}
+
+.cbm-sankey .node.resizing .resize-handle {
+  opacity: 1;
+  fill: rgba(255, 107, 53, 0.8);
+}
+

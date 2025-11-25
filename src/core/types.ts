@@ -54,6 +54,12 @@ export interface SankeyOptions {
   nodeLength: number;
   valueScale: number;
   pathStyle: PathStyle;
+  /** Minimum node thickness in pixels for visibility (nodes with 0 flow still render) */
+  minNodeThickness: number;
+  /** Minimum node length in pixels when resizing */
+  minNodeLength: number;
+  /** Minimum bezier control point distance to prevent path artifacts at short distances */
+  minControlPointDistance: number;
 }
 
 // Default options
@@ -63,6 +69,9 @@ export const DEFAULT_OPTIONS: SankeyOptions = {
   nodeLength: 20,
   valueScale: 1,
   pathStyle: 'constantWidth',
+  minNodeThickness: 4,
+  minNodeLength: 10,
+  minControlPointDistance: 20,
 };
 
 // Event types

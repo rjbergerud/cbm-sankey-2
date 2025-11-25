@@ -17,6 +17,10 @@ export class DragHandler {
   
   private dragging: ComputedNode | null = null;
   private dragOffset = { x: 0, y: 0 };
+  private hasMoved = false;  // Track if mouse actually moved (to distinguish from click)
+  
+  // Store handlers by nodeId for proper cleanup
+  private nodeHandlers: Map<string, (e: MouseEvent) => void> = new Map();
   
   // Bound event handlers (for removal)
   private boundMouseMove: (e: MouseEvent) => void;
@@ -56,33 +60,37 @@ export class DragHandler {
    * Re-attach listeners after DOM update
    */
   private reattachNodeListeners(): void {
+    // DOM elements are replaced on re-render, so clear old handler refs
+    this.nodeHandlers.clear();
+    
     const nodeElements = this.svg.querySelectorAll('.node');
+    console.log('[DragHandler] reattachNodeListeners called, found', nodeElements.length, 'nodes');
     
     nodeElements.forEach(el => {
       const nodeId = el.getAttribute('data-node-id');
       if (!nodeId) return;
       
-      // Remove existing listener if any
-      el.removeEventListener('mousedown', this.onNodeMouseDown as EventListener);
-      
-      // Add new listener
-      el.addEventListener('mousedown', ((e: MouseEvent) => {
+      const handler = (e: MouseEvent) => {
+        console.log('[DragHandler] mousedown on node:', nodeId);
         this.onNodeMouseDown(e, nodeId);
-      }) as EventListener);
+      };
+      this.nodeHandlers.set(nodeId, handler);
+      (el as SVGGElement).addEventListener('mousedown', handler);
     });
   }
   
   /**
    * Handle mouse down on a node
    */
-  private onNodeMouseDown = (e: MouseEvent, nodeId: string): void => {
-    e.preventDefault();
-    e.stopPropagation();
+  private onNodeMouseDown(e: MouseEvent, nodeId: string): void {
+    // Don't call preventDefault() here - it blocks dblclick detection
+    // Don't call stopPropagation() - let other handlers see the event
     
     const node = this.nodes.find(n => n.id === nodeId);
     if (!node) return;
     
     this.dragging = node;
+    this.hasMoved = false;
     
     // Calculate offset from mouse to node center
     const svgPoint = this.getSVGPoint(e);
@@ -91,22 +99,31 @@ export class DragHandler {
       y: svgPoint.y - node.y,
     };
     
-    // Add dragging class
-    const nodeEl = this.svg.querySelector(`[data-node-id="${nodeId}"]`);
-    nodeEl?.classList.add('dragging');
-    
     // Add document-level listeners for drag
     document.addEventListener('mousemove', this.boundMouseMove);
     document.addEventListener('mouseup', this.boundMouseUp);
-    
-    this.callbacks.onDragStart?.(node);
-  };
+  }
   
   /**
    * Handle mouse move during drag
    */
   private onMouseMove(e: MouseEvent): void {
     if (!this.dragging) return;
+    
+    // Only start visual drag after actual movement
+    if (!this.hasMoved) {
+      this.hasMoved = true;
+      // Now we can prevent default (text selection, etc.)
+      e.preventDefault();
+      
+      // Add dragging class
+      const nodeEl = this.svg.querySelector(`[data-node-id="${this.dragging.id}"]`);
+      nodeEl?.classList.add('dragging');
+      
+      this.callbacks.onDragStart?.(this.dragging);
+    }
+    
+    e.preventDefault();  // Prevent text selection during drag
     
     const svgPoint = this.getSVGPoint(e);
     const newX = svgPoint.x - this.dragOffset.x;
@@ -125,19 +142,22 @@ export class DragHandler {
   private onMouseUp(e: MouseEvent): void {
     if (!this.dragging) return;
     
-    // Remove dragging class
-    const nodeEl = this.svg.querySelector(`[data-node-id="${this.dragging.id}"]`);
-    nodeEl?.classList.remove('dragging');
+    // Remove dragging class (only if we actually dragged)
+    if (this.hasMoved) {
+      const nodeEl = this.svg.querySelector(`[data-node-id="${this.dragging.id}"]`);
+      nodeEl?.classList.remove('dragging');
+      
+      // Extract layout and fire callback
+      const layout = extractLayout(this.nodes);
+      this.callbacks.onDragEnd?.(this.dragging, layout);
+    }
     
     // Remove document listeners
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
     
-    // Extract layout and fire callback
-    const layout = extractLayout(this.nodes);
-    this.callbacks.onDragEnd?.(this.dragging, layout);
-    
     this.dragging = null;
+    this.hasMoved = false;
   }
   
   /**
@@ -168,10 +188,6 @@ export class DragHandler {
   destroy(): void {
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('mouseup', this.boundMouseUp);
-    
-    const nodeElements = this.svg.querySelectorAll('.node');
-    nodeElements.forEach(el => {
-      el.removeEventListener('mousedown', this.onNodeMouseDown as EventListener);
-    });
+    this.nodeHandlers.clear();
   }
 }
