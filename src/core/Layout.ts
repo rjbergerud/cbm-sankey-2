@@ -1,9 +1,9 @@
-import { Node, Layout, Orientation } from './types';
+import { Node, Link, Layout, Orientation } from './types';
 
 /**
- * Extract layout from nodes (for saving)
+ * Extract layout from nodes and links (for saving)
  */
-export function extractLayout(nodes: Node[]): Layout {
+export function extractLayout(nodes: Node[], links?: Link[]): Layout {
   const layout: Layout = { nodes: {} };
   
   for (const node of nodes) {
@@ -13,6 +13,26 @@ export function extractLayout(nodes: Node[]): Layout {
       orientation: node.orientation,
       length: node.length,
     };
+  }
+  
+  // Extract link orders if any links have custom ordering
+  if (links) {
+    const linkOrders: Layout['linkOrders'] = {};
+    let hasOrders = false;
+    
+    for (const link of links) {
+      if (link.sourceOrder !== undefined || link.targetOrder !== undefined) {
+        linkOrders[link.id] = {
+          sourceOrder: link.sourceOrder,
+          targetOrder: link.targetOrder,
+        };
+        hasOrders = true;
+      }
+    }
+    
+    if (hasOrders) {
+      layout.linkOrders = linkOrders;
+    }
   }
   
   return layout;
@@ -38,6 +58,28 @@ export function applyLayout(nodes: Node[], layout: Layout): Node[] {
     
     // Node not in layout - keep original position
     return node;
+  });
+}
+
+/**
+ * Apply saved link orders from a layout to links
+ * Returns new link array with orders applied
+ */
+export function applyLinkOrders(links: Link[], layout: Layout): Link[] {
+  if (!layout.linkOrders) return links;
+  
+  return links.map(link => {
+    const savedOrder = layout.linkOrders![link.id];
+    
+    if (savedOrder) {
+      return {
+        ...link,
+        sourceOrder: savedOrder.sourceOrder ?? link.sourceOrder,
+        targetOrder: savedOrder.targetOrder ?? link.targetOrder,
+      };
+    }
+    
+    return link;
   });
 }
 

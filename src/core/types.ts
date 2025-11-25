@@ -40,6 +40,11 @@ export interface Layout {
     orientation: Orientation;
     length?: number;
   }>;
+  /** Link ordering at each node (optional, for user-defined link order) */
+  linkOrders?: Record<string, {
+    sourceOrder?: number;
+    targetOrder?: number;
+  }>;
 }
 
 // Graph - runtime state

@@ -149,6 +149,11 @@
         <li><strong>Hover</strong> on a node edge to reveal the resize handle</li>
         <li><strong>Drag the resize handle</strong> to change node length</li>
       </ul>
+      <h2 style="margin-top: 20px;">Link Ordering</h2>
+      <ul>
+        <li><strong>Hover</strong> near a node edge with multiple links to reveal order handles</li>
+        <li><strong>Drag handles</strong> up/down to reorder links at that edge</li>
+      </ul>
       <h2 style="margin-top: 20px;">Orientation</h2>
       <ul>
         <li><strong>0°</strong> — inputs left, outputs right</li>
@@ -177,6 +182,13 @@
     <div class="control-group">
       <label>Value Scale: <span id="scale-value">0.5</span></label>
       <input type="range" id="scale" min="0.1" max="2" step="0.1" value="0.5">
+    </div>
+    <div class="control-group" style="border-left: 1px solid #ddd; padding-left: 15px; margin-left: 5px;">
+      <label>Layout:</label>
+      <button id="save-layout" style="padding: 4px 12px; cursor: pointer;">Save</button>
+      <button id="load-layout" style="padding: 4px 12px; cursor: pointer;">Load</button>
+      <button id="reset-layout" style="padding: 4px 12px; cursor: pointer;">Reset</button>
+      <span id="layout-status" style="color: #666; font-size: 12px;"></span>
     </div>
   </div>
   
@@ -273,6 +285,84 @@
         helpOverlay.classList.remove('visible');
       }
     });
+    
+    // Layout save/load functionality
+    const LAYOUT_STORAGE_KEY = 'sankey-layout';
+    const layoutStatus = document.getElementById('layout-status');
+    
+    function showStatus(message, duration = 2000) {
+      layoutStatus.textContent = message;
+      setTimeout(() => { layoutStatus.textContent = ''; }, duration);
+    }
+    
+    // Auto-cache layout on every change
+    sankey.on('layoutChange', (layout) => {
+      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+      log('Layout auto-saved to cache');
+    });
+    
+    // Save button - download as JSON file
+    document.getElementById('save-layout').addEventListener('click', () => {
+      const layout = sankey.getLayout();
+      const json = JSON.stringify(layout, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sankey-layout.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      log('Layout saved to file');
+      showStatus('Saved!');
+    });
+    
+    // Load button - load from JSON file
+    document.getElementById('load-layout').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const layout = JSON.parse(e.target.result);
+            sankey.setLayout(layout);
+            localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+            log('Layout loaded from file');
+            showStatus('Loaded!');
+          } catch (err) {
+            log('Error loading layout: ' + err.message);
+            showStatus('Error!', 3000);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+    
+    // Reset button - clear cache and reload with default positions
+    document.getElementById('reset-layout').addEventListener('click', () => {
+      localStorage.removeItem(LAYOUT_STORAGE_KEY);
+      // Recreate with original node positions
+      sankey.setData(nodes, links);
+      log('Layout reset to defaults');
+      showStatus('Reset!');
+    });
+    
+    // On page load, restore from cache if available
+    const cachedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (cachedLayout) {
+      try {
+        const layout = JSON.parse(cachedLayout);
+        sankey.setLayout(layout);
+        log('Layout restored from cache');
+      } catch (err) {
+        log('Error restoring cached layout: ' + err.message);
+      }
+    }
   </script>
 </body>
 </html>

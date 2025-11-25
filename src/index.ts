@@ -10,7 +10,7 @@ import {
   ComputedLink,
 } from './core/types';
 import { createGraph, computeNodes, getNode, getLink } from './core/Graph';
-import { extractLayout, applyLayout } from './core/Layout';
+import { extractLayout, applyLayout, applyLinkOrders } from './core/Layout';
 import { createSVGContainer, renderNodes, renderLinks, clearSVG } from './render/SVGRenderer';
 import { computeLinkPaths } from './render/PathGenerator';
 import { EventEmitter } from './interaction/EventEmitter';
@@ -18,7 +18,7 @@ import { InteractionManager } from './interaction/InteractionManager';
 
 // Re-export types for library consumers
 export * from './core/types';
-export { extractLayout, applyLayout, serializeLayout, parseLayout } from './core/Layout';
+export { extractLayout, applyLayout, applyLinkOrders, serializeLayout, parseLayout } from './core/Layout';
 
 export interface CreateSankeyOptions {
   nodes: Node[];
@@ -61,6 +61,7 @@ export function createSankey(
   // Apply layout if provided
   if (config.layout) {
     nodes = applyLayout(nodes, config.layout);
+    links = applyLinkOrders(links, config.layout);
   }
   
   // Create graph and validate
@@ -133,7 +134,7 @@ export function createSankey(
           // Re-render with updated link orders
           computeAndRender();
           interactionManager?.updateNodes(computedNodes, graph.links);
-          events.emit('layoutChange', extractLayout(graph.nodes));
+          events.emit('layoutChange', extractLayout(graph.nodes, graph.links));
         },
       }, options);
     }
@@ -204,11 +205,14 @@ export function createSankey(
     },
     
     getLayout() {
-      return extractLayout(graph.nodes);
+      return extractLayout(graph.nodes, graph.links);
     },
     
     setLayout(layout: Layout) {
-      graph = createGraph(applyLayout(graph.nodes, layout), graph.links);
+      graph = createGraph(
+        applyLayout(graph.nodes, layout),
+        applyLinkOrders(graph.links, layout)
+      );
       render();
       events.emit('layoutChange', layout);
     },
@@ -223,14 +227,15 @@ export function createSankey(
     },
     
     setData(newNodes: Node[], newLinks: Link[]) {
-      // Preserve layout from current nodes
-      const currentLayout = extractLayout(graph.nodes);
+      // Preserve layout from current nodes and links
+      const currentLayout = extractLayout(graph.nodes, graph.links);
       
-      // Apply current layout to new nodes
+      // Apply current layout to new nodes and links
       const layoutedNodes = applyLayout(newNodes, currentLayout);
+      const orderedLinks = applyLinkOrders(newLinks, currentLayout);
       
       // Update graph
-      graph = createGraph(layoutedNodes, newLinks);
+      graph = createGraph(layoutedNodes, orderedLinks);
       render();
     },
     
