@@ -64,16 +64,12 @@ export class DragHandler {
     this.nodeHandlers.clear();
     
     const nodeElements = this.svg.querySelectorAll('.node');
-    console.log('[DragHandler] reattachNodeListeners called, found', nodeElements.length, 'nodes');
     
     nodeElements.forEach(el => {
       const nodeId = el.getAttribute('data-node-id');
       if (!nodeId) return;
       
-      const handler = (e: MouseEvent) => {
-        console.log('[DragHandler] mousedown on node:', nodeId);
-        this.onNodeMouseDown(e, nodeId);
-      };
+      const handler = (e: MouseEvent) => this.onNodeMouseDown(e, nodeId);
       this.nodeHandlers.set(nodeId, handler);
       (el as SVGGElement).addEventListener('mousedown', handler);
     });

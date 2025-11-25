@@ -14,9 +14,7 @@ import { extractLayout, applyLayout } from './core/Layout';
 import { createSVGContainer, renderNodes, renderLinks, clearSVG } from './render/SVGRenderer';
 import { computeLinkPaths } from './render/PathGenerator';
 import { EventEmitter } from './interaction/EventEmitter';
-import { DragHandler } from './interaction/DragHandler';
-import { RotateHandler } from './interaction/RotateHandler';
-import { ResizeHandler } from './interaction/ResizeHandler';
+import { InteractionManager } from './interaction/InteractionManager';
 
 // Re-export types for library consumers
 export * from './core/types';
@@ -78,120 +76,73 @@ export function createSankey(
   let computedNodes: ComputedNode[] = [];
   let computedLinks: ComputedLink[] = [];
   
-  // Interaction handlers (initialized after first render)
-  let dragHandler: DragHandler | null = null;
-  let rotateHandler: RotateHandler | null = null;
-  let resizeHandler: ResizeHandler | null = null;
+  // Interaction manager (initialized after first render)
+  let interactionManager: InteractionManager | null = null;
 
   /**
-   * Re-render the diagram
+   * Compute and render the diagram
    */
-  function render() {
-    console.log('[Sankey] render() called');
-    // Compute node dimensions
+  function computeAndRender() {
     computedNodes = computeNodes(graph, options);
-    
-    // Compute link paths
     computedLinks = computeLinkPaths(computedNodes, graph.links, options);
-    
-    // Render
     renderNodes(svg, computedNodes, options);
     renderLinks(svg, computedLinks, options);
-    
-    // Attach event listeners
     attachEventListeners();
-    
-    // Update or initialize interaction handlers
-    if (dragHandler) {
-      console.log('[Sankey] updating dragHandler');
-      dragHandler.updateNodes(computedNodes);
+  }
+
+  /**
+   * Initialize or update interaction handlers
+   */
+  function updateInteractions() {
+    if (interactionManager) {
+      interactionManager.updateNodes(computedNodes);
     } else {
-      dragHandler = new DragHandler(svg, computedNodes, {
+      interactionManager = new InteractionManager(svg, computedNodes, {
         onDrag: (node, x, y) => {
-          // Update the graph node position
           const graphNode = graph.nodes.find(n => n.id === node.id);
           if (graphNode) {
             graphNode.x = x;
             graphNode.y = y;
           }
-          // Re-render to update links
-          renderAfterDrag();
+          computeAndRender();
+          interactionManager?.updateNodes(computedNodes);
         },
-        onDragEnd: (node, layout) => {
+        onDragEnd: (_node, layout) => {
           events.emit('layoutChange', layout);
         },
-      });
-    }
-    
-    if (rotateHandler) {
-      console.log('[Sankey] updating rotateHandler');
-      rotateHandler.updateNodes(computedNodes);
-    } else {
-      console.log('[Sankey] creating new rotateHandler');
-      rotateHandler = new RotateHandler(svg, computedNodes, {
         onRotate: (node, newOrientation, layout) => {
-          console.log('[Sankey] onRotate callback fired for node:', node.id, 'new orientation:', newOrientation);
-          // Update the graph node orientation
           const graphNode = graph.nodes.find(n => n.id === node.id);
           if (graphNode) {
             graphNode.orientation = newOrientation;
           }
-          // Re-render to update node and links
           render();
           events.emit('layoutChange', layout);
         },
-      });
-    }
-
-    if (resizeHandler) {
-      resizeHandler.updateNodes(computedNodes);
-    } else {
-      resizeHandler = new ResizeHandler(svg, computedNodes, {
         onResize: (node, newLength) => {
-          // Update the graph node length
           const graphNode = graph.nodes.find(n => n.id === node.id);
           if (graphNode) {
             graphNode.length = newLength;
           }
-          // Re-render to update node and links
-          renderAfterDrag();
+          computeAndRender();
+          interactionManager?.updateNodes(computedNodes);
         },
-        onResizeEnd: (node, layout) => {
+        onResizeEnd: (_node, layout) => {
           events.emit('layoutChange', layout);
         },
       }, options);
     }
   }
-  
+
   /**
-   * Lightweight re-render during drag (only update links)
+   * Full render (compute, render, update interactions)
    */
-  function renderAfterDrag() {
-    // Recompute with updated positions
-    computedNodes = computeNodes(graph, options);
-    computedLinks = computeLinkPaths(computedNodes, graph.links, options);
-    
-    // Re-render nodes and links
-    renderNodes(svg, computedNodes, options);
-    renderLinks(svg, computedLinks, options);
-    
-    // Re-attach basic event listeners (hover/click)
-    attachEventListeners();
-    
-    // Update handler node references
-    if (dragHandler) {
-      dragHandler.updateNodes(computedNodes);
-    }
-    if (rotateHandler) {
-      rotateHandler.updateNodes(computedNodes);
-    }
-    if (resizeHandler) {
-      resizeHandler.updateNodes(computedNodes);
-    }
+  function render() {
+    computeAndRender();
+    updateInteractions();
   }
   
   /**
-   * Attach DOM event listeners
+   * Attach DOM event listeners for hover/click events
    */
   function attachEventListeners() {
     // Node events
@@ -203,11 +154,6 @@ export function createSankey(
       el.addEventListener('click', () => {
         const node = getNode(graph, nodeId);
         if (node) events.emit('nodeClick', node);
-      });
-      
-      // TEST: Add dblclick listener here to see if it fires
-      el.addEventListener('dblclick', () => {
-        console.log('[attachEventListeners] dblclick fired on node:', nodeId);
       });
       
       el.addEventListener('mouseenter', () => {
@@ -283,9 +229,7 @@ export function createSankey(
     },
     
     destroy() {
-      if (dragHandler) dragHandler.destroy();
-      if (rotateHandler) rotateHandler.destroy();
-      if (resizeHandler) resizeHandler.destroy();
+      interactionManager?.destroy();
       events.clear();
       clearSVG(svg);
       svg.remove();

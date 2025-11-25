@@ -51,7 +51,6 @@ export class RotateHandler {
     this.boundHandlers.clear();
     
     const nodeElements = this.svg.querySelectorAll('.node');
-    console.log('[RotateHandler] reattachListeners called, found', nodeElements.length, 'nodes');
     
     nodeElements.forEach(el => {
       const nodeId = el.getAttribute('data-node-id');
@@ -59,15 +58,12 @@ export class RotateHandler {
       
       // Create bound handler for this node
       const handler = (e: Event) => {
-        console.log('[RotateHandler] dblclick fired on node:', nodeId);
         e.preventDefault();
-        // Don't stopPropagation - let other handlers see the event
         this.rotateNode(nodeId);
       };
       
       this.boundHandlers.set(nodeId, handler);
       el.addEventListener('dblclick', handler);
-      console.log('[RotateHandler] attached dblclick listener to node:', nodeId);
     });
   }
   
