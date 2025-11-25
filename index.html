@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBM Sankey - Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+    h1 {
+      margin: 0 0 20px;
+    }
+    #sankey-container {
+      width: 100%;
+      height: 500px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .control-group label {
+      font-size: 12px;
+      color: #666;
+    }
+    .control-group input {
+      width: 150px;
+    }
+    #event-log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #333;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      height: 150px;
+      overflow-y: auto;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>CBM Sankey - Demo</h1>
+  <div id="sankey-container"></div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label>Path Style:</label>
+      <select id="path-style">
+        <option value="constantWidth" selected>Constant Width</option>
+        <option value="bezier">Bezier (original)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Link Curvature: <span id="curvature-value">0.5</span></label>
+      <input type="range" id="curvature" min="0" max="1" step="0.1" value="0.5">
+    </div>
+    <div class="control-group">
+      <label>Value Scale: <span id="scale-value">0.5</span></label>
+      <input type="range" id="scale" min="0.1" max="2" step="0.1" value="0.5">
+    </div>
+  </div>
+  
+  <div id="event-log">Event log...</div>
+
+  <script type="module">
+    import { createSankey } from './src/index.ts';
+    import './src/styles/default.css';
+
+    // Sample data - simple carbon flow
+    const nodes = [
+      { id: 'atmosphere', label: 'Atmosphere', x: 100, y: 250, orientation: 0 },
+      { id: 'biomass', label: 'Biomass', x: 300, y: 150, orientation: 0 },
+      { id: 'dom', label: 'DOM', x: 300, y: 350, orientation: 0 },
+      { id: 'products', label: 'Products', x: 500, y: 100, orientation: 0 },
+      { id: 'soil', label: 'Soil', x: 500, y: 300, orientation: 90, length: 60 },
+    ];
+
+    const links = [
+      { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 100 },
+      { id: 'litterfall', source: 'biomass', target: 'dom', value: 30 },
+      { id: 'harvest', source: 'biomass', target: 'products', value: 20 },
+      { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 40 },
+      { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 25 },
+      { id: 'humification', source: 'dom', target: 'soil', value: 15 },
+      { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 10 },
+    ];
+
+    const container = document.getElementById('sankey-container');
+    const eventLog = document.getElementById('event-log');
+
+    const sankey = createSankey(container, {
+      nodes,
+      links,
+      options: {
+        linkCurvature: 0.5,
+        linkThickness: 1,
+        valueScale: 0.5,
+        nodeLength: 30,
+        pathStyle: 'constantWidth',
+      }
+    });
+
+    // Log events
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      eventLog.innerHTML = `[${time}] ${message}\n` + eventLog.innerHTML;
+    }
+
+    sankey.on('nodeClick', (node) => log(`Node clicked: ${node.id}`));
+    sankey.on('nodeHover', (node) => {
+      if (node) log(`Node hover: ${node.id}`);
+    });
+    sankey.on('linkClick', (link) => log(`Link clicked: ${link.id}`));
+    sankey.on('linkHover', (link) => {
+      if (link) log(`Link hover: ${link.id} (${link.source} → ${link.target})`);
+    });
+
+    // Controls
+    document.getElementById('path-style').addEventListener('change', (e) => {
+      sankey.setOption('pathStyle', e.target.value);
+      log(`Path style: ${e.target.value}`);
+    });
+
+    document.getElementById('curvature').addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      document.getElementById('curvature-value').textContent = value;
+      sankey.setOption('linkCurvature', value);
+    });
+
+    document.getElementById('scale').addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      document.getElementById('scale-value').textContent = value;
+      sankey.setOption('valueScale', value);
+    });
+
+    log('Sankey diagram initialized');
+  </script>
+</body>
+</html>
