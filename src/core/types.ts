@@ -26,6 +26,10 @@ export interface Link {
   value: number;
   layer?: string;
   subflows?: Subflow[];
+  /** Order of this link at source node (lower = earlier in stack). Auto-assigned if not set. */
+  sourceOrder?: number;
+  /** Order of this link at target node (lower = earlier in stack). Auto-assigned if not set. */
+  targetOrder?: number;
 }
 
 // Layout - serializable, reusable across data years

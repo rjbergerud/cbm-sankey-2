@@ -95,9 +95,9 @@ export function createSankey(
    */
   function updateInteractions() {
     if (interactionManager) {
-      interactionManager.updateNodes(computedNodes);
+      interactionManager.updateNodes(computedNodes, graph.links);
     } else {
-      interactionManager = new InteractionManager(svg, computedNodes, {
+      interactionManager = new InteractionManager(svg, computedNodes, graph.links, {
         onDrag: (node, x, y) => {
           const graphNode = graph.nodes.find(n => n.id === node.id);
           if (graphNode) {
@@ -105,7 +105,7 @@ export function createSankey(
             graphNode.y = y;
           }
           computeAndRender();
-          interactionManager?.updateNodes(computedNodes);
+          interactionManager?.updateNodes(computedNodes, graph.links);
         },
         onDragEnd: (_node, layout) => {
           events.emit('layoutChange', layout);
@@ -124,10 +124,16 @@ export function createSankey(
             graphNode.length = newLength;
           }
           computeAndRender();
-          interactionManager?.updateNodes(computedNodes);
+          interactionManager?.updateNodes(computedNodes, graph.links);
         },
         onResizeEnd: (_node, layout) => {
           events.emit('layoutChange', layout);
+        },
+        onLinkOrderChange: (updatedLinks) => {
+          // Re-render with updated link orders
+          computeAndRender();
+          interactionManager?.updateNodes(computedNodes, graph.links);
+          events.emit('layoutChange', extractLayout(graph.nodes));
         },
       }, options);
     }

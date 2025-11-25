@@ -347,8 +347,17 @@ function calculateLinkOffsets(
     return offsets;
   }
   
+  // Sort links by their order property (sourceOrder for outgoing, targetOrder for incoming)
+  const sortedLinks = [...relevantLinks].sort((a, b) => {
+    const orderA = side === 'out' ? (a.sourceOrder ?? Infinity) : (a.targetOrder ?? Infinity);
+    const orderB = side === 'out' ? (b.sourceOrder ?? Infinity) : (b.targetOrder ?? Infinity);
+    // If both have no order, maintain original array order
+    if (orderA === Infinity && orderB === Infinity) return 0;
+    return orderA - orderB;
+  });
+  
   let cumulative = 0;
-  for (const link of relevantLinks) {
+  for (const link of sortedLinks) {
     const proportion = link.value / totalValue;
     const offset = cumulative + proportion / 2;
     const pixelThickness = link.value * options.valueScale;
