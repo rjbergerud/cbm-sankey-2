@@ -1,0 +1,39 @@
+{
+  "name": "cbm-sankey",
+  "version": "0.1.0",
+  "description": "A user-driven layout Sankey diagram library",
+  "type": "module",
+  "main": "./dist/cbm-sankey.umd.js",
+  "module": "./dist/cbm-sankey.es.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/cbm-sankey.es.js",
+      "require": "./dist/cbm-sankey.umd.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "sankey",
+    "diagram",
+    "visualization",
+    "svg",
+    "d3"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4"
+  }
+}
