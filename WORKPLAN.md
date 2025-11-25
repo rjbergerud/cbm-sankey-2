@@ -13,6 +13,7 @@ The library should allow:
 - events fired for on hover and on click for nodes and links
 - packaged as a reusable library with a simple api
 - able to run in Observable notebooks and quarto documents
+- be able to alter the order of links existing a node
 
 Extensions we'd like to eventually add:
 - For certain flows, allow them to drawn for a section as a set of subflows with no gaps, kind of a like a stacked bar chart along the link
@@ -243,71 +244,74 @@ These fields are optional and ignored until the features are implemented.
 # Work Plan
 
 ## Phase 1: Project Setup
-- [ ] Initialize npm project with TypeScript
-- [ ] Configure Vite for library build (ESM + UMD)
-- [ ] Set up tsconfig.json
-- [ ] Create folder structure (`src/core`, `src/render`, `src/interaction`, `src/styles`)
-- [ ] Add dev dependencies (vite, typescript)
+- [x] Initialize npm project with TypeScript
+- [x] Configure Vite for library build (ESM + UMD)
+- [x] Set up tsconfig.json
+- [x] Create folder structure (`src/core`, `src/render`, `src/interaction`, `src/styles`)
+- [x] Add dev dependencies (vite, typescript)
 
 ## Phase 2: Core Data Model
-- [ ] Create `src/core/types.ts` with all interfaces (Node, Link, Layout, SankeyOptions, Graph)
-- [ ] Create `src/core/Graph.ts` — graph construction, validation, node/link lookups
-- [ ] Create `src/core/Layout.ts` — save/load/apply layout to graph
+- [x] Create `src/core/types.ts` with all interfaces (Node, Link, Layout, SankeyOptions, Graph)
+- [x] Create `src/core/Graph.ts` — graph construction, validation, node/link lookups
+- [x] Create `src/core/Layout.ts` — save/load/apply layout to graph
 - [ ] Write unit tests for core data model
 
 ## Phase 3: Basic Rendering
-- [ ] Create `src/render/SVGRenderer.ts` — main renderer, SVG container setup
-- [ ] Create `src/render/NodeRenderer.ts` — draw nodes as rectangles with labels
-- [ ] Create `src/render/LinkRenderer.ts` — draw links as paths (placeholder straight lines)
-- [ ] Create `src/styles/default.css` — base styles
-- [ ] Create `src/index.ts` — export `createSankey()` with basic render
+- [x] Create `src/render/SVGRenderer.ts` — main renderer, SVG container setup
+- [x] Create `src/render/NodeRenderer.ts` — draw nodes as rectangles with labels (in SVGRenderer)
+- [x] Create `src/render/LinkRenderer.ts` — draw links as paths (in SVGRenderer)
+- [x] Create `src/styles/default.css` — base styles
+- [x] Create `src/index.ts` — export `createSankey()` with basic render
 
-**Milestone: Static diagram renders with rectangles and straight lines**
+**Milestone: Static diagram renders with rectangles and straight lines** ✅
 
 ## Phase 4: Path Generation
-- [ ] Create `src/render/PathGenerator.ts` — bezier curve calculation
-- [ ] Handle orientation combinations (exit/entry points based on node orientation)
-- [ ] Implement link stacking (multiple links on same edge)
-- [ ] Add curvature parameter support
+- [x] Create `src/render/PathGenerator.ts` — bezier curve calculation
+- [x] Handle orientation combinations (exit/entry points based on node orientation)
+- [x] Implement link stacking (multiple links on same edge)
+- [x] Add curvature parameter support
+- [x] Add constantWidth path style with smooth quadratic bezier sampling
 
-**Milestone: Proper curved Sankey links render correctly**
+**Milestone: Proper curved Sankey links render correctly** ✅
 
 ## Phase 5: Interaction — Events
-- [ ] Create `src/interaction/EventEmitter.ts` — pub/sub pattern
-- [ ] Add hover events for nodes and links (CSS classes + callbacks)
-- [ ] Add click events for nodes and links
-- [ ] Wire events through `sankey.on()` API
+- [x] Create `src/interaction/EventEmitter.ts` — pub/sub pattern
+- [x] Add hover events for nodes and links (CSS classes + callbacks)
+- [x] Add click events for nodes and links
+- [x] Wire events through `sankey.on()` API
 
-**Milestone: Hover/click events fire correctly**
+**Milestone: Hover/click events fire correctly** ✅
 
 ## Phase 6: Interaction — Layout Editing
-- [ ] Create `src/interaction/DragHandler.ts` — node position dragging
-- [ ] Create `src/interaction/RotateHandler.ts` — rotate nodes (double-click or key)
+- [x] Create `src/interaction/DragHandler.ts` — node position dragging
+- [x] Create `src/interaction/RotateHandler.ts` — rotate nodes (double-click)
 - [ ] Add node length resize handle (drag edge)
-- [ ] Fire `layoutChange` event on any edit
-- [ ] Implement `getLayout()` / `setLayout()` API
+- [x] Fire `layoutChange` event on any edit
+- [x] Implement `getLayout()` / `setLayout()` API
 
-**Milestone: Users can drag nodes, rotate them, resize length, and export layout**
+**Milestone: Users can drag nodes, rotate them, resize length, and export layout** (partial - resize pending)
 
 ## Phase 7: Global Options
-- [ ] Implement `setOption()` for linkThickness
-- [ ] Implement `setOption()` for linkCurvature  
-- [ ] Implement `setOption()` for valueScale
-- [ ] Implement `setOption()` for nodeLength (default)
-- [ ] Re-render on option change
+- [x] Implement `setOption()` for linkThickness
+- [x] Implement `setOption()` for linkCurvature  
+- [x] Implement `setOption()` for valueScale
+- [x] Implement `setOption()` for nodeLength (default)
+- [x] Re-render on option change
 
-**Milestone: Global sliders can adjust diagram appearance**
+**Milestone: Global sliders can adjust diagram appearance** ✅
 
 ## Phase 8: Data Updates
-- [ ] Implement `setData()` — swap nodes/links while preserving layout
-- [ ] Handle missing nodes in layout gracefully (use defaults)
-- [ ] Handle extra nodes in layout gracefully (ignore)
 
-**Milestone: Can swap between years of data with same layout**
+- [x] Implement `setData()` — swap nodes/links while preserving layout
+- [x] Handle missing nodes in layout gracefully (use defaults)
+- [x] Handle extra nodes in layout gracefully (ignore)
+
+**Milestone: Can swap between years of data with same layout** ✅
 
 ## Phase 9: Polish & Packaging
-- [ ] CSS class generation from IDs (sanitization)
-- [ ] Documentation (README with API examples)
+
+- [x] CSS class generation from IDs (sanitization)
+- [x] Documentation (README with API examples)
 - [ ] Observable notebook example
 - [ ] Quarto document example
 - [ ] Publish to npm
