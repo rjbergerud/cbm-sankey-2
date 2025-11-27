@@ -11,6 +11,8 @@ A user-driven layout Sankey diagram library. Design your layout once, reuse it a
 - **Two path styles**: Bezier ribbons or constant-width paths
 - **Observable/Quarto compatible**: ESM and UMD builds included
 
+![](demo.gif)
+
 ## Installation
 
 ```bash
