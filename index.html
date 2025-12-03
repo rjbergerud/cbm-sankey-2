@@ -169,6 +169,16 @@
   
   <div class="controls">
     <div class="control-group">
+      <label>Year:</label>
+      <select id="year-select">
+        <option value="2000">2000</option>
+        <option value="2001">2001</option>
+        <option value="2002">2002</option>
+        <option value="2003">2003</option>
+        <option value="2004">2004</option>
+      </select>
+    </div>
+    <div class="control-group">
       <label>Path Style:</label>
       <select id="path-style">
         <option value="constantWidth" selected>Constant Width</option>
@@ -183,6 +193,10 @@
       <label>Value Scale: <span id="scale-value">0.5</span></label>
       <input type="range" id="scale" min="0.1" max="2" step="0.1" value="0.5">
     </div>
+    <div class="control-group">
+      <label>Animation: <span id="duration-value">300</span>ms</label>
+      <input type="range" id="duration" min="0" max="1000" step="50" value="300">
+    </div>
     <div class="control-group" style="border-left: 1px solid #ddd; padding-left: 15px; margin-left: 5px;">
       <label>Layout:</label>
       <button id="save-layout" style="padding: 4px 12px; cursor: pointer;">Save</button>
@@ -195,7 +209,7 @@
   <div id="event-log">Event log...</div>
 
   <script type="module">
-    import { createSankey } from './src/index.ts';
+    import { createSankey, easings } from './src/index.ts';
     import './src/styles/default.css';
 
     // Sample data - simple carbon flow
@@ -207,28 +221,90 @@
       { id: 'soil', label: 'Soil', x: 500, y: 300, orientation: 90, length: 60 },
     ];
 
-    const links = [
-      { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 100 },
-      { id: 'litterfall', source: 'biomass', target: 'dom', value: 30 },
-      { id: 'harvest', source: 'biomass', target: 'products', value: 20 },
-      { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 40 },
-      { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 25 },
-      { id: 'humification', source: 'dom', target: 'soil', value: 15 },
-      { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 10 },
-    ];
+    // Link data by year (simulating changing carbon flows over time)
+    // Flows are balanced: inputs ≈ outputs for each node
+    const linksByYear = {
+      2000: [
+        // Atmosphere → Biomass (photosynthesis)
+        { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 100 },
+        // Biomass outputs: 40 + 40 + 20 = 100 ✓
+        { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 40 },
+        { id: 'litterfall', source: 'biomass', target: 'dom', value: 40 },
+        { id: 'harvest', source: 'biomass', target: 'products', value: 20 },
+        // DOM inputs: 40, outputs: 25 + 15 = 40 ✓
+        { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 25 },
+        { id: 'humification', source: 'dom', target: 'soil', value: 15 },
+        // Soil inputs: 15, outputs: 15 ✓
+        { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 15 },
+        // Products inputs: 20, outputs: 20 ✓
+        { id: 'product-decay', source: 'products', target: 'atmosphere', value: 20 },
+      ],
+      2001: [
+        { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 110 },
+        // Biomass: 44 + 44 + 22 = 110 ✓
+        { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 44 },
+        { id: 'litterfall', source: 'biomass', target: 'dom', value: 44 },
+        { id: 'harvest', source: 'biomass', target: 'products', value: 22 },
+        // DOM: 44, outputs: 28 + 16 = 44 ✓
+        { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 28 },
+        { id: 'humification', source: 'dom', target: 'soil', value: 16 },
+        { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 16 },
+        { id: 'product-decay', source: 'products', target: 'atmosphere', value: 22 },
+      ],
+      2002: [
+        // Drought year - reduced photosynthesis
+        { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 75 },
+        // Biomass: 30 + 35 + 10 = 75 ✓
+        { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 30 },
+        { id: 'litterfall', source: 'biomass', target: 'dom', value: 35 },
+        { id: 'harvest', source: 'biomass', target: 'products', value: 10 },
+        // DOM: 35, outputs: 23 + 12 = 35 ✓
+        { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 23 },
+        { id: 'humification', source: 'dom', target: 'soil', value: 12 },
+        { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 12 },
+        { id: 'product-decay', source: 'products', target: 'atmosphere', value: 10 },
+      ],
+      2003: [
+        // Recovery year
+        { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 120 },
+        // Biomass: 48 + 48 + 24 = 120 ✓
+        { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 48 },
+        { id: 'litterfall', source: 'biomass', target: 'dom', value: 48 },
+        { id: 'harvest', source: 'biomass', target: 'products', value: 24 },
+        // DOM: 48, outputs: 30 + 18 = 48 ✓
+        { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 30 },
+        { id: 'humification', source: 'dom', target: 'soil', value: 18 },
+        { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 18 },
+        { id: 'product-decay', source: 'products', target: 'atmosphere', value: 24 },
+      ],
+      2004: [
+        { id: 'photosynthesis', source: 'atmosphere', target: 'biomass', value: 115 },
+        // Biomass: 46 + 46 + 23 = 115 ✓
+        { id: 'respiration', source: 'biomass', target: 'atmosphere', value: 46 },
+        { id: 'litterfall', source: 'biomass', target: 'dom', value: 46 },
+        { id: 'harvest', source: 'biomass', target: 'products', value: 23 },
+        // DOM: 46, outputs: 29 + 17 = 46 ✓
+        { id: 'decomposition', source: 'dom', target: 'atmosphere', value: 29 },
+        { id: 'humification', source: 'dom', target: 'soil', value: 17 },
+        { id: 'soil-respiration', source: 'soil', target: 'atmosphere', value: 17 },
+        { id: 'product-decay', source: 'products', target: 'atmosphere', value: 23 },
+      ],
+    };
 
     const container = document.getElementById('sankey-container');
     const eventLog = document.getElementById('event-log');
 
     const sankey = createSankey(container, {
       nodes,
-      links,
+      links: linksByYear[2000],
       options: {
         linkCurvature: 0.5,
         linkThickness: 1,
         valueScale: 0.5,
         nodeLength: 30,
         pathStyle: 'constantWidth',
+        transitionDuration: 300,
+        transitionEasing: easings.easeOut,
       }
     });
 
@@ -248,6 +324,16 @@
     });
 
     // Controls
+    document.getElementById('year-select').addEventListener('change', (e) => {
+      const year = parseInt(e.target.value);
+      sankey.setLinks(linksByYear[year]);
+      log(`Year changed to ${year} (animating...)`);
+    });
+
+    // Listen for animation events
+    sankey.on('transitionStart', () => log('Animation started'));
+    sankey.on('transitionEnd', () => log('Animation complete'));
+
     document.getElementById('path-style').addEventListener('change', (e) => {
       sankey.setOption('pathStyle', e.target.value);
       log(`Path style: ${e.target.value}`);
@@ -263,6 +349,13 @@
       const value = parseFloat(e.target.value);
       document.getElementById('scale-value').textContent = value;
       sankey.setOption('valueScale', value);
+    });
+
+    document.getElementById('duration').addEventListener('input', (e) => {
+      const value = parseInt(e.target.value);
+      document.getElementById('duration-value').textContent = value;
+      sankey.setOption('transitionDuration', value);
+      log(`Animation duration: ${value}ms`);
     });
 
     log('Sankey diagram initialized');
@@ -346,8 +439,9 @@
     // Reset button - clear cache and reload with default positions
     document.getElementById('reset-layout').addEventListener('click', () => {
       localStorage.removeItem(LAYOUT_STORAGE_KEY);
-      // Recreate with original node positions
-      sankey.setData(nodes, links);
+      // Recreate with original node positions and current year's links
+      const currentYear = parseInt(document.getElementById('year-select').value);
+      sankey.setData(nodes, linksByYear[currentYear]);
       log('Layout reset to defaults');
       showStatus('Reset!');
     });

@@ -8,6 +8,7 @@ import {
   SankeyEventCallback,
   ComputedNode,
   ComputedLink,
+  easings,
 } from './core/types';
 import { createGraph, computeNodes, getNode, getLink } from './core/Graph';
 import { extractLayout, applyLayout, applyLinkOrders } from './core/Layout';
@@ -15,10 +16,12 @@ import { createSVGContainer, renderNodes, renderLinks, clearSVG } from './render
 import { computeLinkPaths } from './render/PathGenerator';
 import { EventEmitter } from './interaction/EventEmitter';
 import { InteractionManager } from './interaction/InteractionManager';
+import { Animator } from './animation/Animator';
 
 // Re-export types for library consumers
 export * from './core/types';
 export { extractLayout, applyLayout, applyLinkOrders, serializeLayout, parseLayout } from './core/Layout';
+export { Animator } from './animation/Animator';
 
 export interface CreateSankeyOptions {
   nodes: Node[];
@@ -41,6 +44,11 @@ export interface SankeyInstance {
   
   // Data updates
   setData(nodes: Node[], links: Link[]): void;
+  setLinks(links: Link[]): void;
+  
+  // Animation control
+  isAnimating(): boolean;
+  cancelAnimation(): void;
   
   // Cleanup
   destroy(): void;
@@ -80,8 +88,14 @@ export function createSankey(
   // Interaction manager (initialized after first render)
   let interactionManager: InteractionManager | null = null;
 
+  // Animator for data transitions
+  const animator = new Animator(svg, options, {
+    onStart: () => events.emit('transitionStart', null),
+    onEnd: () => events.emit('transitionEnd', null),
+  });
+
   /**
-   * Compute and render the diagram
+   * Compute and render the diagram (no animation)
    */
   function computeAndRender() {
     computedNodes = computeNodes(graph, options);
@@ -89,6 +103,29 @@ export function createSankey(
     renderNodes(svg, computedNodes, options);
     renderLinks(svg, computedLinks, options);
     attachEventListeners();
+  }
+
+  /**
+   * Compute new state and animate to it
+   */
+  async function computeAndAnimate() {
+    // Capture current state before computing new one
+    const fromState = animator.captureState();
+    
+    // Compute new state
+    computedNodes = computeNodes(graph, options);
+    computedLinks = computeLinkPaths(computedNodes, graph.links, options);
+    
+    // Render structure (creates DOM elements for new nodes/links)
+    renderNodes(svg, computedNodes, options);
+    renderLinks(svg, computedLinks, options);
+    attachEventListeners();
+    
+    // Animate from old values to new values
+    await animator.animateTo(computedNodes, computedLinks, fromState);
+    
+    // Update interactions after animation completes
+    updateInteractions();
   }
 
   /**
@@ -219,6 +256,7 @@ export function createSankey(
     
     setOption<K extends keyof SankeyOptions>(key: K, value: SankeyOptions[K]) {
       options[key] = value;
+      animator.updateOptions(options);
       render();
     },
     
@@ -236,10 +274,33 @@ export function createSankey(
       
       // Update graph
       graph = createGraph(layoutedNodes, orderedLinks);
-      render();
+      
+      // Animate to new state
+      computeAndAnimate();
+    },
+    
+    setLinks(newLinks: Link[]) {
+      // Preserve link ordering from current links
+      const currentLayout = extractLayout(graph.nodes, graph.links);
+      const orderedLinks = applyLinkOrders(newLinks, currentLayout);
+      
+      // Update graph with same nodes, new links
+      graph = createGraph(graph.nodes, orderedLinks);
+      
+      // Animate to new state
+      computeAndAnimate();
+    },
+    
+    isAnimating() {
+      return animator.isAnimating();
+    },
+    
+    cancelAnimation() {
+      animator.cancel();
     },
     
     destroy() {
+      animator.destroy();
       interactionManager?.destroy();
       events.clear();
       clearSVG(svg);

@@ -102,6 +102,8 @@ interface SankeyOptions {
   curvature: number;       // Bezier curvature 0-1 (default: 0.5)
   nodeLength: number;      // Default node length (default: 20)
   pathStyle: 'bezier' | 'constantWidth';  // Path rendering style
+  transitionDuration: number;  // Animation duration in ms (default: 300, 0 = instant)
+  transitionEasing: (t: number) => number;  // Easing function
 }
 ```
 
@@ -116,6 +118,8 @@ sankey.on('nodeHover', (node) => { /* node or null */ });
 sankey.on('linkClick', (link) => console.log(link));
 sankey.on('linkHover', (link) => { /* link or null */ });
 sankey.on('layoutChange', (layout) => { /* save layout */ });
+sankey.on('transitionStart', () => { /* animation started */ });
+sankey.on('transitionEnd', () => { /* animation complete */ });
 
 // Unsubscribe
 unsubscribe();
@@ -140,6 +144,7 @@ sankey.setLayout(savedLayout);
 sankey.setOption('curvature', 0.7);
 sankey.setOption('valueScale', 2);
 sankey.setOption('pathStyle', 'constantWidth');
+sankey.setOption('transitionDuration', 500);  // Slower animations
 
 // Get current options
 const options = sankey.getOptions();
@@ -148,8 +153,27 @@ const options = sankey.getOptions();
 #### Data Updates
 
 ```typescript
-// Swap to different year's data (layout preserved)
+// Swap to different year's data (layout preserved, animates)
 sankey.setData(year2024Nodes, year2024Links);
+
+// Update just link values (common case - same nodes, different flows)
+sankey.setLinks(year2024Links);  // Animates thickness changes
+```
+
+#### Animation Control
+
+```typescript
+import { easings } from 'sankey-hand-layout';
+
+// Use built-in easings
+sankey.setOption('transitionEasing', easings.easeOutCubic);
+
+// Check animation state
+if (sankey.isAnimating()) {
+  sankey.cancelAnimation();
+}
+
+// Available easings: linear, easeIn, easeOut, easeInOut, easeOutCubic, easeInOutCubic
 ```
 
 #### Cleanup

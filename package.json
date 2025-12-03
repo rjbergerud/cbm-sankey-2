@@ -48,7 +48,11 @@
     "type": "git",
     "url": ""
   },
+  "dependencies": {
+    "d3-interpolate": "^3.0.1"
+  },
   "devDependencies": {
+    "@types/d3-interpolate": "^3.0.4",
     "typescript": "^5.9.3",
     "vite": "^7.2.4"
   }

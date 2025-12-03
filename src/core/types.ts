@@ -56,6 +56,9 @@ export interface Graph {
 // Path style options
 export type PathStyle = 'bezier' | 'constantWidth';
 
+// Easing function type
+export type EasingFunction = (t: number) => number;
+
 // Global settings
 export interface SankeyOptions {
   linkThickness: number;
@@ -69,7 +72,21 @@ export interface SankeyOptions {
   minNodeLength: number;
   /** Minimum bezier control point distance to prevent path artifacts at short distances */
   minControlPointDistance: number;
+  /** Animation duration in milliseconds (0 = instant, no animation) */
+  transitionDuration: number;
+  /** Easing function for animations */
+  transitionEasing: EasingFunction;
 }
+
+/** Built-in easing functions */
+export const easings = {
+  linear: (t: number) => t,
+  easeIn: (t: number) => t * t,
+  easeOut: (t: number) => t * (2 - t),
+  easeInOut: (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+  easeOutCubic: (t: number) => 1 - Math.pow(1 - t, 3),
+  easeInOutCubic: (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+};
 
 // Default options
 export const DEFAULT_OPTIONS: SankeyOptions = {
@@ -81,6 +98,8 @@ export const DEFAULT_OPTIONS: SankeyOptions = {
   minNodeThickness: 4,
   minNodeLength: 10,
   minControlPointDistance: 20,
+  transitionDuration: 300,
+  transitionEasing: easings.easeOut,
 };
 
 // Event types
@@ -89,7 +108,9 @@ export type SankeyEventType =
   | 'nodeHover'
   | 'linkClick'
   | 'linkHover'
-  | 'layoutChange';
+  | 'layoutChange'
+  | 'transitionStart'
+  | 'transitionEnd';
 
 export type SankeyEventCallback<T> = (data: T) => void;
 
