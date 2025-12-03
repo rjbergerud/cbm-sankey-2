@@ -15,6 +15,9 @@ const HANDLE_CONSTANTS = {
   MAX_HANDLE_SPAN: 20,
 };
 
+/** Which side of the node the handle is on */
+type HandleSide = 'start' | 'end';
+
 export interface ResizeHandlerOptions {
   onResize: (node: ComputedNode, newLength: number) => void;
   onResizeEnd: (node: ComputedNode, layout: Layout) => void;
@@ -29,9 +32,10 @@ export class ResizeHandler {
   private options: ResizeHandlerOptions;
   private sankeyOptions: SankeyOptions;
   private activeNode: ComputedNode | null = null;
+  private activeHandleSide: HandleSide | null = null;
   private startLength: number = 0;
   private startPos: { x: number; y: number } = { x: 0, y: 0 };
-  private handleElements: Map<string, SVGRectElement> = new Map();
+  private handleElements: Map<string, { start: SVGRectElement; end: SVGRectElement }> = new Map();
 
   constructor(
     svg: SVGSVGElement,
@@ -55,7 +59,10 @@ export class ResizeHandler {
    */
   private createHandles(): void {
     // Remove existing handles
-    this.handleElements.forEach(el => el.remove());
+    this.handleElements.forEach(({ start, end }) => {
+      start.remove();
+      end.remove();
+    });
     this.handleElements.clear();
 
     const nodesGroup = this.svg.querySelector('.nodes');
@@ -65,30 +72,32 @@ export class ResizeHandler {
       const nodeGroup = nodesGroup.querySelector(`[data-node-id="${node.id}"]`);
       if (!nodeGroup) continue;
 
-      const handle = this.createHandle(node);
-      nodeGroup.appendChild(handle);
-      this.handleElements.set(node.id, handle);
+      const startHandle = this.createHandle(node, 'start');
+      const endHandle = this.createHandle(node, 'end');
+      nodeGroup.appendChild(startHandle);
+      nodeGroup.appendChild(endHandle);
+      this.handleElements.set(node.id, { start: startHandle, end: endHandle });
     }
   }
 
   /**
    * Create a single resize handle for a node
    */
-  private createHandle(node: ComputedNode): SVGRectElement {
+  private createHandle(node: ComputedNode, side: HandleSide): SVGRectElement {
     const handle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    handle.setAttribute('class', 'resize-handle');
+    handle.setAttribute('class', `resize-handle resize-handle--${side}`);
     
-    this.positionHandle(handle, node);
+    this.positionHandle(handle, node, side);
     
-    handle.addEventListener('mousedown', (e) => this.onMouseDown(e, node));
+    handle.addEventListener('mousedown', (e) => this.onMouseDown(e, node, side));
     
     return handle;
   }
 
   /**
-   * Position the handle at the "out" edge of the node
+   * Position the handle at the specified edge of the node
    */
-  private positionHandle(handle: SVGRectElement, node: ComputedNode): void {
+  private positionHandle(handle: SVGRectElement, node: ComputedNode, side: HandleSide): void {
     const length = node.length ?? this.sankeyOptions.nodeLength;
     const thickness = Math.max(node.thickness, this.sankeyOptions.minNodeThickness);
     const handleDepth = HANDLE_CONSTANTS.HANDLE_DEPTH;
@@ -99,8 +108,10 @@ export class ResizeHandler {
     let x: number, y: number, width: number, height: number;
     
     if (isHorizontal) {
-      // Handle on right or left edge depending on orientation
-      const edgeX = node.orientation === 0 
+      // Handles on left and right edges
+      // 'start' = left edge (negative x direction from center)
+      // 'end' = right edge (positive x direction from center)
+      const edgeX = side === 'end'
         ? node.x + length / 2 - handleDepth / 2
         : node.x - length / 2 - handleDepth / 2;
       
@@ -109,8 +120,10 @@ export class ResizeHandler {
       width = handleDepth;
       height = handleSpan;
     } else {
-      // Handle on bottom or top edge depending on orientation
-      const edgeY = node.orientation === 90
+      // Handles on top and bottom edges
+      // 'start' = top edge (negative y direction from center)
+      // 'end' = bottom edge (positive y direction from center)
+      const edgeY = side === 'end'
         ? node.y + length / 2 - handleDepth / 2
         : node.y - length / 2 - handleDepth / 2;
       
@@ -126,11 +139,12 @@ export class ResizeHandler {
     handle.setAttribute('height', String(height));
   }
 
-  private onMouseDown(e: MouseEvent, node: ComputedNode): void {
+  private onMouseDown(e: MouseEvent, node: ComputedNode, side: HandleSide): void {
     e.preventDefault();
     e.stopPropagation();
 
     this.activeNode = node;
+    this.activeHandleSide = side;
     this.startLength = node.length ?? this.sankeyOptions.nodeLength;
     this.startPos = this.getSVGPoint(e);
 
@@ -143,21 +157,24 @@ export class ResizeHandler {
   }
 
   private onMouseMove(e: MouseEvent): void {
-    if (!this.activeNode) return;
+    if (!this.activeNode || !this.activeHandleSide) return;
 
     const currentPos = this.getSVGPoint(e);
     const isHorizontal = this.activeNode.orientation === 0 || this.activeNode.orientation === 180;
     
     // Calculate delta in the direction of the node's length axis
+    // Direction depends on which handle is being dragged
     let delta: number;
     if (isHorizontal) {
-      delta = this.activeNode.orientation === 0
-        ? currentPos.x - this.startPos.x
-        : this.startPos.x - currentPos.x;
+      // For horizontal nodes, dragging 'end' handle right = increase, left = decrease
+      // Dragging 'start' handle left = increase, right = decrease
+      const rawDelta = currentPos.x - this.startPos.x;
+      delta = this.activeHandleSide === 'end' ? rawDelta : -rawDelta;
     } else {
-      delta = this.activeNode.orientation === 90
-        ? currentPos.y - this.startPos.y
-        : this.startPos.y - currentPos.y;
+      // For vertical nodes, dragging 'end' handle down = increase, up = decrease
+      // Dragging 'start' handle up = increase, down = decrease
+      const rawDelta = currentPos.y - this.startPos.y;
+      delta = this.activeHandleSide === 'end' ? rawDelta : -rawDelta;
     }
 
     // Calculate new length, respecting minimum from options
@@ -184,6 +201,7 @@ export class ResizeHandler {
     this.options.onResizeEnd(this.activeNode, layout);
 
     this.activeNode = null;
+    this.activeHandleSide = null;
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.onMouseUp);
   }
@@ -219,7 +237,10 @@ export class ResizeHandler {
   destroy(): void {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.onMouseUp);
-    this.handleElements.forEach(el => el.remove());
+    this.handleElements.forEach(({ start, end }) => {
+      start.remove();
+      end.remove();
+    });
     this.handleElements.clear();
   }
 }
