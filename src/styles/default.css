@@ -1,11 +1,11 @@
-/* CBM Sankey - Default Theme */
+/* Sankey Hand Layout - Default Theme */
 
-.cbm-sankey {
+.sankey-hand-layout {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
 /* Node styles */
-.cbm-sankey .node rect {
+.sankey-hand-layout .node rect {
   fill: steelblue;
   stroke: none;
   stroke-width: 1px;
@@ -13,16 +13,16 @@
   transition: fill 0.15s ease;
 }
 
-.cbm-sankey .node:hover rect {
+.sankey-hand-layout .node:hover rect {
   fill: #4682b4cc;
 }
 
-.cbm-sankey .node.dragging rect {
+.sankey-hand-layout .node.dragging rect {
   cursor: grabbing;
   fill: #2c5aa0;
 }
 
-.cbm-sankey .node text {
+.sankey-hand-layout .node text {
   font-size: 12px;
   fill: #fff;
   pointer-events: none;
@@ -30,35 +30,35 @@
 }
 
 /* Link styles - filled shapes */
-.cbm-sankey .link {
+.sankey-hand-layout .link {
   fill: #999;
   fill-opacity: 0.5;
   stroke: none;
   transition: fill-opacity 0.15s ease;
 }
 
-.cbm-sankey .link:hover {
+.sankey-hand-layout .link:hover {
   fill-opacity: 0.8;
 }
 
-.cbm-sankey .link.highlighted {
+.sankey-hand-layout .link.highlighted {
   fill-opacity: 0.9;
   fill: #666;
 }
 
 /* Selection states */
-.cbm-sankey .node.selected rect {
+.sankey-hand-layout .node.selected rect {
   stroke: #ff6b35;
   stroke-width: 2px;
 }
 
-.cbm-sankey .link.selected {
+.sankey-hand-layout .link.selected {
   fill: #ff6b35;
   fill-opacity: 0.9;
 }
 
 /* Resize handle */
-.cbm-sankey .resize-handle {
+.sankey-hand-layout .resize-handle {
   fill: transparent;
   stroke: none;
   cursor: ew-resize;
@@ -67,28 +67,28 @@
   transition: opacity 0.15s ease, fill 0.15s ease;
 }
 
-.cbm-sankey .node:hover .resize-handle {
+.sankey-hand-layout .node:hover .resize-handle {
   opacity: 1;
   fill: rgba(0, 0, 0, 0.3);
   pointer-events: auto;  /* Enable events when visible */
 }
 
-.cbm-sankey .resize-handle:hover {
+.sankey-hand-layout .resize-handle:hover {
   fill: rgba(255, 107, 53, 0.6);
 }
 
 /* Vertical nodes need different cursor */
-.cbm-sankey .node[data-orientation="90"] .resize-handle,
-.cbm-sankey .node[data-orientation="270"] .resize-handle {
+.sankey-hand-layout .node[data-orientation="90"] .resize-handle,
+.sankey-hand-layout .node[data-orientation="270"] .resize-handle {
   cursor: ns-resize;
 }
 
-.cbm-sankey .node.resizing rect {
+.sankey-hand-layout .node.resizing rect {
   stroke: #ff6b35;
   stroke-width: 2px;
 }
 
-.cbm-sankey .node.resizing .resize-handle {
+.sankey-hand-layout .node.resizing .resize-handle {
   opacity: 1;
   fill: rgba(255, 107, 53, 0.8);
 }

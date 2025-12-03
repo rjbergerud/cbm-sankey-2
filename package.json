@@ -1,37 +1,53 @@
 {
-  "name": "cbm-sankey",
+  "name": "sankey-hand-layout",
   "version": "0.1.0",
-  "description": "A user-driven layout Sankey diagram library",
+  "description": "A user-driven layout Sankey diagram library with drag, rotate, and resize interactions",
   "type": "module",
-  "main": "./dist/cbm-sankey.umd.js",
-  "module": "./dist/cbm-sankey.es.js",
-  "types": "./dist/types/index.d.ts",
+  "main": "./dist/sankey-hand-layout.umd.cjs",
+  "module": "./dist/sankey-hand-layout.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/cbm-sankey.es.js",
-      "require": "./dist/cbm-sankey.umd.js",
-      "types": "./dist/types/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/sankey-hand-layout.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/sankey-hand-layout.umd.cjs"
+      }
     },
     "./style.css": "./dist/style.css"
   },
   "files": [
     "dist"
   ],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --outDir dist",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "sankey",
     "diagram",
     "visualization",
     "svg",
-    "d3"
+    "interactive",
+    "observable",
+    "observable-framework",
+    "hand-layout"
   ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "devDependencies": {
     "typescript": "^5.9.3",
     "vite": "^7.2.4"

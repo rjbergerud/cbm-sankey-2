@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'CbmSankey',
-      fileName: (format) => `cbm-sankey.${format}.js`,
+      name: 'SankeyHandLayout',
+      fileName: (format) => `sankey-hand-layout.${format === 'es' ? 'js' : 'umd.cjs'}`,
       formats: ['es', 'umd'],
     },
     rollupOptions: {
@@ -15,5 +15,6 @@ export default defineConfig({
         globals: {},
       },
     },
+    cssFileName: 'style',
   },
 });

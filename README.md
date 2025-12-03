@@ -1,29 +1,29 @@
-# cbm-sankey
+# sankey-hand-layout
 
 A user-driven layout Sankey diagram library. Design your layout once, reuse it across multiple years of data.
 
 ## Features
 
-- **User-driven layout**: Drag nodes, rotate them (0°/90°/180°/270°), and export layouts for reuse
+- **User-driven layout**: Drag nodes, rotate them (0°/90°/180°/270°), resize them, and export layouts for reuse
 - **Orientation-based flow**: Links enter/exit nodes based on orientation, not fixed directions
 - **CSS theming**: Style nodes and links using CSS classes generated from IDs
-- **Interactive**: Hover, click, drag, and rotate events
+- **Interactive**: Hover, click, drag, rotate, and resize interactions
 - **Two path styles**: Bezier ribbons or constant-width paths
-- **Observable/Quarto compatible**: ESM and UMD builds included
+- **Observable Framework compatible**: ESM and UMD builds included
 
 ![](demo.gif)
 
 ## Installation
 
 ```bash
-npm install cbm-sankey
+npm install sankey-hand-layout
 ```
 
 ## Quick Start
 
 ```typescript
-import { createSankey } from 'cbm-sankey';
-import 'cbm-sankey/dist/style.css';
+import { createSankey } from 'sankey-hand-layout';
+import 'sankey-hand-layout/style.css';
 
 const container = document.getElementById('diagram');
 
@@ -164,20 +164,20 @@ Nodes and links get CSS classes based on their IDs:
 
 ```css
 /* Base styles */
-.cbm-sankey .node rect { fill: steelblue; }
-.cbm-sankey .link { fill: #999; fill-opacity: 0.5; }
+.sankey-hand-layout .node rect { fill: steelblue; }
+.sankey-hand-layout .link { fill: #999; fill-opacity: 0.5; }
 
 /* Style by node ID */
-.cbm-sankey .node--atmosphere rect { fill: #87CEEB; }
-.cbm-sankey .node--forest rect { fill: #228B22; }
+.sankey-hand-layout .node--atmosphere rect { fill: #87CEEB; }
+.sankey-hand-layout .node--forest rect { fill: #228B22; }
 
 /* Style by link ID */
-.cbm-sankey .link--photosynthesis { fill: #32CD32; }
-.cbm-sankey .link--fire { fill: #ff4500; }
+.sankey-hand-layout .link--photosynthesis { fill: #32CD32; }
+.sankey-hand-layout .link--fire { fill: #ff4500; }
 
 /* Hover states */
-.cbm-sankey .link:hover { fill-opacity: 0.8; }
-.cbm-sankey .node:hover rect { stroke: #333; stroke-width: 2; }
+.sankey-hand-layout .link:hover { fill-opacity: 0.8; }
+.sankey-hand-layout .node:hover rect { stroke: #333; stroke-width: 2; }
 ```
 
 IDs are converted to CSS-safe class names: lowercase, spaces and special characters become hyphens.
@@ -205,21 +205,45 @@ Paths maintain consistent width along their length. Good for flows where you wan
 ## Browser Usage (UMD)
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/cbm-sankey/dist/style.css">
-<script src="https://unpkg.com/cbm-sankey/dist/cbm-sankey.umd.cjs"></script>
+<link rel="stylesheet" href="https://unpkg.com/sankey-hand-layout/dist/style.css">
+<script src="https://unpkg.com/sankey-hand-layout/dist/sankey-hand-layout.umd.cjs"></script>
 <script>
-  const sankey = CbmSankey.createSankey(container, { nodes, links });
+  const sankey = SankeyHandLayout.createSankey(container, { nodes, links });
 </script>
 ```
 
-## Observable Notebooks
+## Observable Framework
+
+In an Observable Framework project, add to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "sankey-hand-layout": "^0.1.0"
+  }
+}
+```
+
+Then in your `.md` file:
+
+```js
+import { createSankey } from "sankey-hand-layout";
+import "sankey-hand-layout/style.css";
+```
+
+```js
+const container = display(html`<div style="width: 800px; height: 600px;"></div>`);
+const sankey = createSankey(container, { nodes, links });
+```
+
+## Observable Notebooks (legacy)
 
 ```javascript
-CbmSankey = require("cbm-sankey")
+SankeyHandLayout = require("sankey-hand-layout")
 
 viewof diagram = {
   const container = html`<div style="width: 800px; height: 600px;"></div>`;
-  const sankey = CbmSankey.createSankey(container, { nodes, links });
+  const sankey = SankeyHandLayout.createSankey(container, { nodes, links });
   return container;
 }
 ```
