@@ -178,6 +178,18 @@
    Link Order Handles
    ============================================================================ */
 
+.sankey-hand-layout .link-order-handles {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.sankey-hand-layout .link-order-handles:hover,
+.sankey-hand-layout .link-order-handles.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .sankey-hand-layout .link-order-handle {
   fill: var(--sankey-handle-color);
   cursor: grab;

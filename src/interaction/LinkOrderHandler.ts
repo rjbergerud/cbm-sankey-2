@@ -261,6 +261,9 @@ export class LinkOrderHandler {
     data.element.style.cursor = 'grabbing';
     data.element.style.fill = '#2196F3';
     
+    // Keep handles visible during drag
+    this.handlesGroup?.classList.add('active');
+    
     // Collect sibling handles for swap detection
     this.siblingHandles = this.handles.filter(
       h => h.nodeId === data.nodeId && h.side === data.side && h.linkId !== data.linkId
@@ -379,7 +382,8 @@ export class LinkOrderHandler {
     this.dragging = null;
     this.siblingHandles = [];
     
-    // Hide handles
+    // Remove active class and hide handles
+    this.handlesGroup?.classList.remove('active');
     setTimeout(() => {
       this.hideSiblingHandles(nodeId, side);
     }, 200);
