@@ -114,22 +114,24 @@ export function createSankey(
    * Compute new state and animate to it
    */
   async function computeAndAnimate() {
-    // Capture current state before computing new one
+    // Capture current state before ANY other work
     const fromState = animator.captureState();
     
     // Compute new state
     computedNodes = computeNodes(graph, options);
     computedLinks = computeLinkPaths(computedNodes, graph.links, options);
     
-    // Render structure (creates DOM elements for new nodes/links)
-    renderNodes(svg, computedNodes, options);
-    renderLinks(svg, computedLinks, options);
-    attachEventListeners();
+    // Render structure but skip geometry updates for existing elements
+    // This preserves current visual state while adding/removing elements
+    renderNodes(svg, computedNodes, options, true);
+    renderLinks(svg, computedLinks, options, true);
     
     // Animate from old values to new values
+    // Note: We defer event listeners until after animation to avoid DOM thrashing
     await animator.animateTo(computedNodes, computedLinks, fromState);
     
-    // Update interactions after animation completes
+    // Attach event listeners and update interactions after animation completes
+    attachEventListeners();
     updateInteractions();
   }
 

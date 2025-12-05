@@ -42,6 +42,8 @@ export class Animator {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
+      // Remove animating class when cancelled
+      this.svg.classList.remove('animating');
     }
   }
 
@@ -116,32 +118,49 @@ export class Animator {
       const nodeInterpolators = this.buildNodeInterpolators(startState, targetNodes);
       const linkInterpolators = this.buildLinkInterpolators(startState, targetLinks);
 
+      // Add animating class to disable CSS transitions
+      this.svg.classList.add('animating');
+
+      // CRITICAL: Apply starting state immediately (t=0) to prevent flash
+      // This ensures the DOM shows the old values before animation starts
+      this.applyNodeFrame(nodeInterpolators, 0, targetNodes);
+      this.applyLinkFrame(linkInterpolators, 0);
+
       // Emit start event
       this.callbacks.onStart?.();
 
-      const startTime = performance.now();
+      // Use requestAnimationFrame to start on next paint cycle
+      // The browser will have painted the t=0 state
+      requestAnimationFrame(() => {
+        // Force layout calculation to ensure t=0 is committed
+        void this.svg.getBoundingClientRect();
+        
+        const startTime = performance.now();
 
-      const tick = () => {
-        const elapsed = performance.now() - startTime;
-        const rawT = Math.min(elapsed / duration, 1);
-        const t = easing(rawT);
+        const tick = () => {
+          const elapsed = performance.now() - startTime;
+          const rawT = Math.min(elapsed / duration, 1);
+          const t = easing(rawT);
 
-        // Interpolate nodes
-        this.applyNodeFrame(nodeInterpolators, t, targetNodes);
+          // Interpolate nodes
+          this.applyNodeFrame(nodeInterpolators, t, targetNodes);
 
-        // Interpolate links
-        this.applyLinkFrame(linkInterpolators, t);
+          // Interpolate links
+          this.applyLinkFrame(linkInterpolators, t);
 
-        if (rawT < 1) {
-          this.animationId = requestAnimationFrame(tick);
-        } else {
-          this.animationId = null;
-          this.callbacks.onEnd?.();
-          resolve();
-        }
-      };
+          if (rawT < 1) {
+            this.animationId = requestAnimationFrame(tick);
+          } else {
+            this.animationId = null;
+            // Remove animating class to re-enable CSS transitions
+            this.svg.classList.remove('animating');
+            this.callbacks.onEnd?.();
+            resolve();
+          }
+        };
 
-      this.animationId = requestAnimationFrame(tick);
+        this.animationId = requestAnimationFrame(tick);
+      });
     });
   }
 

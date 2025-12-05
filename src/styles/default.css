@@ -74,6 +74,13 @@
   fill-opacity: 1;
 }
 
+/* Disable CSS transitions during JS animation to prevent conflicts */
+.sankey-hand-layout.animating .node .node-base,
+.sankey-hand-layout.animating .node .node-shape-overlay,
+.sankey-hand-layout.animating .link {
+  transition: none !important;
+}
+
 .sankey-hand-layout .node:hover .node-base {
   fill: var(--sankey-node-fill-hover);
 }
@@ -179,21 +186,20 @@
    ============================================================================ */
 
 .sankey-hand-layout .link-order-handles {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-
-.sankey-hand-layout .link-order-handles:hover,
-.sankey-hand-layout .link-order-handles.active {
-  opacity: 1;
+  /* Handles are always interactive, but visually hidden until hovered */
   pointer-events: auto;
 }
 
 .sankey-hand-layout .link-order-handle {
   fill: var(--sankey-handle-color);
   cursor: grab;
-  transition: fill 0.15s ease;
+  opacity: 0;
+  transition: opacity 0.15s ease, fill 0.15s ease;
+}
+
+.sankey-hand-layout .link-order-handles:hover .link-order-handle,
+.sankey-hand-layout .link-order-handles.active .link-order-handle {
+  opacity: 1;
 }
 
 .sankey-hand-layout .link-order-handle:hover {

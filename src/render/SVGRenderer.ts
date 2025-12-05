@@ -145,94 +145,177 @@ export function createSVGContainer(container: HTMLElement): SVGSVGElement {
 }
 
 /**
- * Render all nodes
+ * Render all nodes (incremental update - reuses existing elements when possible)
+ * @param skipGeometryForExisting - If true, don't update geometry attributes on existing elements (used for animation)
  */
 export function renderNodes(
   svg: SVGSVGElement,
   nodes: ComputedNode[],
-  options: SankeyOptions
+  options: SankeyOptions,
+  skipGeometryForExisting: boolean = false
 ): void {
   const nodesGroup = svg.querySelector('.nodes');
   if (!nodesGroup) return;
   
-  // Clear existing nodes
-  nodesGroup.innerHTML = '';
+  const existingNodeIds = new Set<string>();
   
   for (const node of nodes) {
-    const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     const shape = node.shape ?? 'rect';
-    nodeGroup.setAttribute('class', `node node--${toClassName(node.id)} node-shape--${shape}`);
-    nodeGroup.setAttribute('data-node-id', node.id);
-    nodeGroup.setAttribute('data-orientation', String(node.orientation));
-    nodeGroup.setAttribute('data-shape', shape);
+    let nodeGroup = nodesGroup.querySelector(`[data-node-id="${node.id}"]`) as SVGGElement | null;
+    const isExisting = nodeGroup !== null;
     
     // Calculate dimensions based on orientation
     const length = node.length ?? options.nodeLength;
     const thickness = Math.max(node.thickness, options.minNodeThickness);
-    
-    // Width/height depend on orientation
     const isHorizontal = node.orientation === 0 || node.orientation === 180;
     const width = isHorizontal ? length : thickness;
     const height = isHorizontal ? thickness : length;
     
-    // Always create a base rectangle (this is where links attach)
-    const baseRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    baseRect.setAttribute('x', String(node.x - width / 2));
-    baseRect.setAttribute('y', String(node.y - height / 2));
-    baseRect.setAttribute('width', String(width));
-    baseRect.setAttribute('height', String(height));
-    baseRect.classList.add('node-base');
-    nodeGroup.appendChild(baseRect);
+    if (!nodeGroup) {
+      // Create new node element
+      nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      nodeGroup.setAttribute('data-node-id', node.id);
+      
+      // Create base rectangle
+      const baseRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      baseRect.classList.add('node-base');
+      nodeGroup.appendChild(baseRect);
+      
+      nodesGroup.appendChild(nodeGroup);
+    }
     
-    // For non-rect shapes, add the shape overlay on top
-    if (shape !== 'rect') {
-      const shapeOverlay = createNodeShapeOverlay(shape, node.x, node.y, width, height, node.orientation);
-      if (shapeOverlay) {
-        shapeOverlay.classList.add('node-shape-overlay');
-        nodeGroup.appendChild(shapeOverlay);
+    existingNodeIds.add(node.id);
+    
+    // Update node group attributes (always update these - not animated)
+    nodeGroup.setAttribute('class', `node node--${toClassName(node.id)} node-shape--${shape}`);
+    nodeGroup.setAttribute('data-orientation', String(node.orientation));
+    nodeGroup.setAttribute('data-shape', shape);
+    
+    // Skip geometry updates for existing elements when animating
+    const shouldUpdateGeometry = !isExisting || !skipGeometryForExisting;
+    
+    if (shouldUpdateGeometry) {
+      // Update base rectangle
+      const baseRect = nodeGroup.querySelector('.node-base') as SVGRectElement;
+      if (baseRect) {
+        baseRect.setAttribute('x', String(node.x - width / 2));
+        baseRect.setAttribute('y', String(node.y - height / 2));
+        baseRect.setAttribute('width', String(width));
+        baseRect.setAttribute('height', String(height));
       }
     }
     
-    // Create label
-    if (node.label) {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', String(node.x));
-      text.setAttribute('y', String(node.y));
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.textContent = node.label;
-      nodeGroup.appendChild(text);
+    // Handle shape overlay
+    const existingOverlay = nodeGroup.querySelector('.node-shape-overlay');
+    if (shape !== 'rect') {
+      // Need a shape overlay
+      if (existingOverlay) {
+        // Update existing overlay (only if updating geometry)
+        if (shouldUpdateGeometry) {
+          if (shape === 'circle') {
+            const inset = getShapeInset(shape, width, height);
+            existingOverlay.setAttribute('cx', String(node.x));
+            existingOverlay.setAttribute('cy', String(node.y));
+            existingOverlay.setAttribute('rx', String((width / 2) - inset));
+            existingOverlay.setAttribute('ry', String((height / 2) - inset));
+          } else {
+            const d = getShapeOverlayPath(shape, node.x, node.y, width, height, node.orientation);
+            if (d) existingOverlay.setAttribute('d', d);
+          }
+        }
+      } else {
+        // Create new overlay - use final dimensions, animation will overwrite
+        const shapeOverlay = createNodeShapeOverlay(shape, node.x, node.y, width, height, node.orientation);
+        if (shapeOverlay) {
+          shapeOverlay.classList.add('node-shape-overlay');
+          // Insert after base rect, before text
+          const text = nodeGroup.querySelector('text');
+          if (text) {
+            nodeGroup.insertBefore(shapeOverlay, text);
+          } else {
+            nodeGroup.appendChild(shapeOverlay);
+          }
+        }
+      }
+    } else if (existingOverlay) {
+      // Remove overlay if shape is now rect
+      existingOverlay.remove();
     }
     
-    nodesGroup.appendChild(nodeGroup);
+    // Handle label (always update position)
+    let text = nodeGroup.querySelector('text');
+    if (node.label) {
+      if (!text) {
+        text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'middle');
+        nodeGroup.appendChild(text);
+      }
+      text.setAttribute('x', String(node.x));
+      text.setAttribute('y', String(node.y));
+      text.textContent = node.label;
+    } else if (text) {
+      text.remove();
+    }
   }
+  
+  // Remove nodes that no longer exist
+  const allNodeGroups = nodesGroup.querySelectorAll('[data-node-id]');
+  allNodeGroups.forEach(el => {
+    const nodeId = el.getAttribute('data-node-id');
+    if (nodeId && !existingNodeIds.has(nodeId)) {
+      el.remove();
+    }
+  });
 }
 
 /**
- * Render all links
+ * Render all links (incremental update - reuses existing elements when possible)
+ * @param skipGeometryForExisting - If true, don't update path 'd' attribute on existing elements (used for animation)
  */
 export function renderLinks(
   svg: SVGSVGElement,
   links: ComputedLink[],
-  options: SankeyOptions
+  options: SankeyOptions,
+  skipGeometryForExisting: boolean = false
 ): void {
   const linksGroup = svg.querySelector('.links');
   if (!linksGroup) return;
   
-  // Clear existing links
-  linksGroup.innerHTML = '';
+  const existingLinkIds = new Set<string>();
   
   for (const link of links) {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    let path = linksGroup.querySelector(`[data-link-id="${link.id}"]`) as SVGPathElement | null;
+    const isExisting = path !== null;
+    
+    if (!path) {
+      // Create new link element
+      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('data-link-id', link.id);
+      linksGroup.appendChild(path);
+    }
+    
+    existingLinkIds.add(link.id);
+    
+    // Update link attributes (class is not animated)
     path.setAttribute('class', `link link--${toClassName(link.id)}`);
-    path.setAttribute('data-link-id', link.id);
     path.setAttribute('data-source', link.source);
     path.setAttribute('data-target', link.target);
-    path.setAttribute('d', link.path);
-    // Links are now filled shapes, not stroked lines
     
-    linksGroup.appendChild(path);
+    // Only update geometry for new elements or when not skipping
+    if (!isExisting || !skipGeometryForExisting) {
+      path.setAttribute('d', link.path);
+    }
   }
+  
+  // Remove links that no longer exist
+  const allLinkPaths = linksGroup.querySelectorAll('[data-link-id]');
+  allLinkPaths.forEach(el => {
+    const linkId = el.getAttribute('data-link-id');
+    if (linkId && !existingLinkIds.has(linkId)) {
+      el.remove();
+    }
+  });
 }
 
 /**
