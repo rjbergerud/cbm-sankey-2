@@ -1,6 +1,9 @@
 // Node orientation type
 export type Orientation = 0 | 90 | 180 | 270;
 
+// Node shape type
+export type NodeShape = 'rect' | 'arrow' | 'chevron' | 'diamond' | 'circle';
+
 // Node interface
 export interface Node {
   id: string;
@@ -10,6 +13,8 @@ export interface Node {
   orientation: Orientation;
   length?: number;
   categories?: string[];
+  /** Shape of the node (default: 'rect') */
+  shape?: NodeShape;
 }
 
 // Subflow for future stacked segments
@@ -39,6 +44,7 @@ export interface Layout {
     y: number;
     orientation: Orientation;
     length?: number;
+    shape?: NodeShape;
   }>;
   /** Link ordering at each node (optional, for user-defined link order) */
   linkOrders?: Record<string, {

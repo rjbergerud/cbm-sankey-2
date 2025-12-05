@@ -1,4 +1,4 @@
-import { Node, Link, Layout, Orientation } from './types';
+import { Node, Link, Layout, Orientation, NodeShape } from './types';
 
 /**
  * Extract layout from nodes and links (for saving)
@@ -12,6 +12,7 @@ export function extractLayout(nodes: Node[], links?: Link[]): Layout {
       y: node.y,
       orientation: node.orientation,
       length: node.length,
+      shape: node.shape,
     };
   }
   
@@ -53,6 +54,7 @@ export function applyLayout(nodes: Node[], layout: Layout): Node[] {
         y: savedLayout.y,
         orientation: savedLayout.orientation,
         length: savedLayout.length ?? node.length,
+        shape: savedLayout.shape ?? node.shape,
       };
     }
     

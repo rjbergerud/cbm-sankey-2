@@ -197,6 +197,27 @@
       <label>Animation: <span id="duration-value">300</span>ms</label>
       <input type="range" id="duration" min="0" max="1000" step="50" value="300">
     </div>
+    <div class="control-group">
+      <label>Node Shape:</label>
+      <select id="node-shape">
+        <option value="rect" selected>Rectangle</option>
+        <option value="arrow">Arrow</option>
+        <option value="chevron">Chevron</option>
+        <option value="diamond">Diamond</option>
+        <option value="circle">Circle</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Apply Shape To:</label>
+      <select id="shape-target">
+        <option value="all">All Nodes</option>
+        <option value="atmosphere">Atmosphere</option>
+        <option value="biomass">Biomass</option>
+        <option value="dom">DOM</option>
+        <option value="products">Products</option>
+        <option value="soil">Soil</option>
+      </select>
+    </div>
     <div class="control-group" style="border-left: 1px solid #ddd; padding-left: 15px; margin-left: 5px;">
       <label>Layout:</label>
       <button id="save-layout" style="padding: 4px 12px; cursor: pointer;">Save</button>
@@ -356,6 +377,42 @@
       document.getElementById('duration-value').textContent = value;
       sankey.setOption('transitionDuration', value);
       log(`Animation duration: ${value}ms`);
+    });
+
+    // Node shape controls
+    // Track current shapes per node
+    const nodeShapes = {};
+    nodes.forEach(n => nodeShapes[n.id] = 'rect');
+
+    function updateNodeShapes() {
+      const updatedNodes = nodes.map(n => ({
+        ...n,
+        shape: nodeShapes[n.id] || 'rect'
+      }));
+      const currentYear = document.getElementById('year-select').value;
+      sankey.setData(updatedNodes, linksByYear[currentYear]);
+    }
+
+    document.getElementById('node-shape').addEventListener('change', (e) => {
+      const shape = e.target.value;
+      const target = document.getElementById('shape-target').value;
+      
+      if (target === 'all') {
+        nodes.forEach(n => nodeShapes[n.id] = shape);
+        log(`All nodes set to ${shape}`);
+      } else {
+        nodeShapes[target] = shape;
+        log(`${target} set to ${shape}`);
+      }
+      updateNodeShapes();
+    });
+
+    document.getElementById('shape-target').addEventListener('change', (e) => {
+      // Update the shape dropdown to show the current shape for the selected node
+      const target = e.target.value;
+      if (target !== 'all') {
+        document.getElementById('node-shape').value = nodeShapes[target] || 'rect';
+      }
     });
 
     log('Sankey diagram initialized');
