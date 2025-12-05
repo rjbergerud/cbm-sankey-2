@@ -5,7 +5,7 @@ import { toClassName } from '../core/Graph';
  * Calculate the inset depth for shaped nodes (how much the shape is inset from edges)
  * This leaves room for the base rectangle to show where links attach
  */
-function getShapeInset(shape: NodeShape, width: number, height: number): number {
+export function getShapeInset(shape: NodeShape, width: number, height: number): number {
   const minDim = Math.min(width, height);
   switch (shape) {
     case 'arrow':
@@ -22,7 +22,70 @@ function getShapeInset(shape: NodeShape, width: number, height: number): number 
 }
 
 /**
- * Generate SVG path for different node shapes (as overlay, inset from base rectangle)
+ * Generate the path 'd' attribute for different node shapes (as overlay, inset from base rectangle)
+ */
+export function getShapeOverlayPath(
+  shape: NodeShape,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  orientation: number
+): string | null {
+  // For rect, no overlay needed
+  if (shape === 'rect') {
+    return null;
+  }
+  
+  const inset = getShapeInset(shape, width, height);
+  const hw = width / 2;
+  const hh = height / 2;
+  
+  switch (shape) {
+    case 'arrow': {
+      const tipDepth = inset;
+      if (orientation === 0) {
+        return `M ${x - hw + inset} ${y - hh} L ${x + hw - tipDepth} ${y - hh} L ${x + hw} ${y} L ${x + hw - tipDepth} ${y + hh} L ${x - hw + inset} ${y + hh} Z`;
+      } else if (orientation === 180) {
+        return `M ${x + hw - inset} ${y - hh} L ${x - hw + tipDepth} ${y - hh} L ${x - hw} ${y} L ${x - hw + tipDepth} ${y + hh} L ${x + hw - inset} ${y + hh} Z`;
+      } else if (orientation === 90) {
+        return `M ${x - hw} ${y - hh + inset} L ${x + hw} ${y - hh + inset} L ${x + hw} ${y + hh - tipDepth} L ${x} ${y + hh} L ${x - hw} ${y + hh - tipDepth} Z`;
+      } else {
+        return `M ${x - hw} ${y + hh - inset} L ${x + hw} ${y + hh - inset} L ${x + hw} ${y - hh + tipDepth} L ${x} ${y - hh} L ${x - hw} ${y - hh + tipDepth} Z`;
+      }
+    }
+    
+    case 'chevron': {
+      const tipDepth = inset;
+      const notchDepth = Math.min(width, height) * 0.2;
+      if (orientation === 0) {
+        return `M ${x - hw + inset + notchDepth} ${y} L ${x - hw + inset} ${y - hh} L ${x + hw - tipDepth} ${y - hh} L ${x + hw} ${y} L ${x + hw - tipDepth} ${y + hh} L ${x - hw + inset} ${y + hh} Z`;
+      } else if (orientation === 180) {
+        return `M ${x + hw - inset - notchDepth} ${y} L ${x + hw - inset} ${y - hh} L ${x - hw + tipDepth} ${y - hh} L ${x - hw} ${y} L ${x - hw + tipDepth} ${y + hh} L ${x + hw - inset} ${y + hh} Z`;
+      } else if (orientation === 90) {
+        return `M ${x} ${y - hh + inset + notchDepth} L ${x - hw} ${y - hh + inset} L ${x - hw} ${y + hh - tipDepth} L ${x} ${y + hh} L ${x + hw} ${y + hh - tipDepth} L ${x + hw} ${y - hh + inset} Z`;
+      } else {
+        return `M ${x} ${y + hh - inset - notchDepth} L ${x - hw} ${y + hh - inset} L ${x - hw} ${y - hh + tipDepth} L ${x} ${y - hh} L ${x + hw} ${y - hh + tipDepth} L ${x + hw} ${y + hh - inset} Z`;
+      }
+    }
+    
+    case 'diamond': {
+      const diamondHw = hw * 0.7;
+      const diamondHh = hh * 0.7;
+      return `M ${x} ${y - diamondHh} L ${x + diamondHw} ${y} L ${x} ${y + diamondHh} L ${x - diamondHw} ${y} Z`;
+    }
+    
+    case 'circle':
+      // Circle uses ellipse element, not path - handled separately
+      return null;
+    
+    default:
+      return null;
+  }
+}
+
+/**
+ * Generate SVG element for different node shapes (as overlay, inset from base rectangle)
  */
 function createNodeShapeOverlay(
   shape: NodeShape,
@@ -39,82 +102,24 @@ function createNodeShapeOverlay(
     return null;
   }
   
-  const inset = getShapeInset(shape, width, height);
-  const hw = width / 2;
-  const hh = height / 2;
-  
-  switch (shape) {
-    case 'arrow': {
-      // Arrow overlay - inset from both ends so base rect shows
-      const path = document.createElementNS(ns, 'path');
-      const tipDepth = inset;
-      
-      let d: string;
-      if (orientation === 0) {
-        // Pointing right - inset from left edge, tip on right
-        d = `M ${x - hw + inset} ${y - hh} L ${x + hw - tipDepth} ${y - hh} L ${x + hw} ${y} L ${x + hw - tipDepth} ${y + hh} L ${x - hw + inset} ${y + hh} Z`;
-      } else if (orientation === 180) {
-        // Pointing left - inset from right edge, tip on left
-        d = `M ${x + hw - inset} ${y - hh} L ${x - hw + tipDepth} ${y - hh} L ${x - hw} ${y} L ${x - hw + tipDepth} ${y + hh} L ${x + hw - inset} ${y + hh} Z`;
-      } else if (orientation === 90) {
-        // Pointing down - inset from top, tip on bottom
-        d = `M ${x - hw} ${y - hh + inset} L ${x + hw} ${y - hh + inset} L ${x + hw} ${y + hh - tipDepth} L ${x} ${y + hh} L ${x - hw} ${y + hh - tipDepth} Z`;
-      } else {
-        // Pointing up (270) - inset from bottom, tip on top
-        d = `M ${x - hw} ${y + hh - inset} L ${x + hw} ${y + hh - inset} L ${x + hw} ${y - hh + tipDepth} L ${x} ${y - hh} L ${x - hw} ${y - hh + tipDepth} Z`;
-      }
-      path.setAttribute('d', d);
-      return path;
-    }
-    
-    case 'chevron': {
-      // Chevron overlay - inset from both ends
-      const path = document.createElementNS(ns, 'path');
-      const tipDepth = inset;
-      const notchDepth = Math.min(width, height) * 0.2;
-      
-      let d: string;
-      if (orientation === 0) {
-        // Pointing right
-        d = `M ${x - hw + inset + notchDepth} ${y} L ${x - hw + inset} ${y - hh} L ${x + hw - tipDepth} ${y - hh} L ${x + hw} ${y} L ${x + hw - tipDepth} ${y + hh} L ${x - hw + inset} ${y + hh} Z`;
-      } else if (orientation === 180) {
-        // Pointing left  
-        d = `M ${x + hw - inset - notchDepth} ${y} L ${x + hw - inset} ${y - hh} L ${x - hw + tipDepth} ${y - hh} L ${x - hw} ${y} L ${x - hw + tipDepth} ${y + hh} L ${x + hw - inset} ${y + hh} Z`;
-      } else if (orientation === 90) {
-        // Pointing down
-        d = `M ${x} ${y - hh + inset + notchDepth} L ${x - hw} ${y - hh + inset} L ${x - hw} ${y + hh - tipDepth} L ${x} ${y + hh} L ${x + hw} ${y + hh - tipDepth} L ${x + hw} ${y - hh + inset} Z`;
-      } else {
-        // Pointing up (270)
-        d = `M ${x} ${y + hh - inset - notchDepth} L ${x - hw} ${y + hh - inset} L ${x - hw} ${y - hh + tipDepth} L ${x} ${y - hh} L ${x + hw} ${y - hh + tipDepth} L ${x + hw} ${y + hh - inset} Z`;
-      }
-      path.setAttribute('d', d);
-      return path;
-    }
-    
-    case 'diamond': {
-      // Diamond overlay - centered, doesn't need edge insets since it's a point shape
-      const path = document.createElementNS(ns, 'path');
-      // Slightly smaller diamond that leaves corners exposed
-      const diamondHw = hw * 0.7;
-      const diamondHh = hh * 0.7;
-      const d = `M ${x} ${y - diamondHh} L ${x + diamondHw} ${y} L ${x} ${y + diamondHh} L ${x - diamondHw} ${y} Z`;
-      path.setAttribute('d', d);
-      return path;
-    }
-    
-    case 'circle': {
-      // Ellipse overlay - slightly smaller to show base rect at edges
-      const ellipse = document.createElementNS(ns, 'ellipse');
-      ellipse.setAttribute('cx', String(x));
-      ellipse.setAttribute('cy', String(y));
-      ellipse.setAttribute('rx', String((width / 2) - inset));
-      ellipse.setAttribute('ry', String((height / 2) - inset));
-      return ellipse;
-    }
-    
-    default:
-      return null;
+  // Handle circle specially (uses ellipse element)
+  if (shape === 'circle') {
+    const inset = getShapeInset(shape, width, height);
+    const ellipse = document.createElementNS(ns, 'ellipse');
+    ellipse.setAttribute('cx', String(x));
+    ellipse.setAttribute('cy', String(y));
+    ellipse.setAttribute('rx', String((width / 2) - inset));
+    ellipse.setAttribute('ry', String((height / 2) - inset));
+    return ellipse;
   }
+  
+  // For path-based shapes
+  const d = getShapeOverlayPath(shape, x, y, width, height, orientation);
+  if (!d) return null;
+  
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', d);
+  return path;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { interpolate, interpolateNumber } from 'd3-interpolate';
-import { ComputedNode, ComputedLink, SankeyOptions, EasingFunction } from '../core/types';
+import { ComputedNode, ComputedLink, SankeyOptions, EasingFunction, NodeShape } from '../core/types';
 import { toClassName } from '../core/Graph';
+import { getShapeOverlayPath, getShapeInset } from '../render/SVGRenderer';
 
 export interface AnimationState {
   nodes: Map<string, { thickness: number }>;
@@ -58,11 +59,11 @@ export class Animator {
     const nodes = new Map<string, { thickness: number }>();
     const links = new Map<string, { path: string }>();
 
-    // Capture node thicknesses from rect elements
+    // Capture node thicknesses from node-base rect elements
     const nodeElements = this.svg.querySelectorAll('.node');
     nodeElements.forEach(el => {
       const nodeId = el.getAttribute('data-node-id');
-      const rect = el.querySelector('rect');
+      const rect = el.querySelector('.node-base') as SVGRectElement;
       if (nodeId && rect) {
         const orientation = el.getAttribute('data-orientation');
         const isHorizontal = orientation === '0' || orientation === '180';
@@ -215,19 +216,42 @@ export class Animator {
       if (!interp) continue;
 
       const thickness = interp(t);
-      const nodeGroup = nodesGroup.querySelector(`[data-node-id="${node.id}"]`);
-      const rect = nodeGroup?.querySelector('rect');
-      if (!rect) continue;
+      const nodeGroup = nodesGroup.querySelector(`[data-node-id="${node.id}"]`) as SVGGElement;
+      if (!nodeGroup) continue;
+      
+      const baseRect = nodeGroup.querySelector('.node-base') as SVGRectElement;
+      if (!baseRect) continue;
 
       const length = node.length ?? this.options.nodeLength;
       const isHorizontal = node.orientation === 0 || node.orientation === 180;
       const width = isHorizontal ? length : thickness;
       const height = isHorizontal ? thickness : length;
 
-      rect.setAttribute('x', String(node.x - width / 2));
-      rect.setAttribute('y', String(node.y - height / 2));
-      rect.setAttribute('width', String(width));
-      rect.setAttribute('height', String(height));
+      // Update base rectangle
+      baseRect.setAttribute('x', String(node.x - width / 2));
+      baseRect.setAttribute('y', String(node.y - height / 2));
+      baseRect.setAttribute('width', String(width));
+      baseRect.setAttribute('height', String(height));
+      
+      // Update shape overlay if present
+      const shapeOverlay = nodeGroup.querySelector('.node-shape-overlay');
+      if (shapeOverlay) {
+        const shape = (node.shape ?? 'rect') as NodeShape;
+        if (shape === 'circle') {
+          // Update ellipse attributes
+          const inset = getShapeInset(shape, width, height);
+          shapeOverlay.setAttribute('cx', String(node.x));
+          shapeOverlay.setAttribute('cy', String(node.y));
+          shapeOverlay.setAttribute('rx', String((width / 2) - inset));
+          shapeOverlay.setAttribute('ry', String((height / 2) - inset));
+        } else {
+          // Update path 'd' attribute
+          const d = getShapeOverlayPath(shape, node.x, node.y, width, height, node.orientation);
+          if (d) {
+            shapeOverlay.setAttribute('d', d);
+          }
+        }
+      }
     }
   }
 
@@ -258,9 +282,11 @@ export class Animator {
 
     if (nodesGroup) {
       for (const node of nodes) {
-        const nodeGroup = nodesGroup.querySelector(`[data-node-id="${node.id}"]`);
-        const rect = nodeGroup?.querySelector('rect');
-        if (!rect) continue;
+        const nodeGroup = nodesGroup.querySelector(`[data-node-id="${node.id}"]`) as SVGGElement;
+        if (!nodeGroup) continue;
+        
+        const baseRect = nodeGroup.querySelector('.node-base') as SVGRectElement;
+        if (!baseRect) continue;
 
         const thickness = Math.max(node.thickness, this.options.minNodeThickness);
         const length = node.length ?? this.options.nodeLength;
@@ -268,10 +294,31 @@ export class Animator {
         const width = isHorizontal ? length : thickness;
         const height = isHorizontal ? thickness : length;
 
-        rect.setAttribute('x', String(node.x - width / 2));
-        rect.setAttribute('y', String(node.y - height / 2));
-        rect.setAttribute('width', String(width));
-        rect.setAttribute('height', String(height));
+        // Update base rectangle
+        baseRect.setAttribute('x', String(node.x - width / 2));
+        baseRect.setAttribute('y', String(node.y - height / 2));
+        baseRect.setAttribute('width', String(width));
+        baseRect.setAttribute('height', String(height));
+        
+        // Update shape overlay if present
+        const shapeOverlay = nodeGroup.querySelector('.node-shape-overlay');
+        if (shapeOverlay) {
+          const shape = (node.shape ?? 'rect') as NodeShape;
+          if (shape === 'circle') {
+            // Update ellipse attributes
+            const inset = getShapeInset(shape, width, height);
+            shapeOverlay.setAttribute('cx', String(node.x));
+            shapeOverlay.setAttribute('cy', String(node.y));
+            shapeOverlay.setAttribute('rx', String((width / 2) - inset));
+            shapeOverlay.setAttribute('ry', String((height / 2) - inset));
+          } else {
+            // Update path 'd' attribute
+            const d = getShapeOverlayPath(shape, node.x, node.y, width, height, node.orientation);
+            if (d) {
+              shapeOverlay.setAttribute('d', d);
+            }
+          }
+        }
       }
     }
 
