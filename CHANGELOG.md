@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-12-04
+
+### ✨ New Features
+
+**Node Shapes**
+- New `shape` property on nodes: `'rect'` | `'arrow'` | `'chevron'` | `'diamond'` | `'circle'`
+- Shapes render as overlays on top of base rectangles (links still connect to rectangle edges)
+- Shapes respect node orientation for directional shapes (arrow, chevron)
+- Shapes are saved/restored with layout serialization
+
+**Light/Dark Theme System**
+- Full CSS custom properties theme system with `--sankey-*` variables
+- New `setTheme('light' | 'dark')` API method
+- Themes control: background, node fills, link colors, text colors, handle colors
+- Text labels now have outline stroke for readability on any background
+
+### 🐛 Bug Fixes
+
+- Fixed node animation: both base rectangle and shape overlay now animate together during transitions
+- Fixed `setData()` to preserve incoming node shapes rather than overwriting with saved layout values
+- Fixed opacity mismatch between node base rectangles and links (now both use 0.45)
+- Fixed text readability on light backgrounds with stroke outline
+
+### 🔧 API Changes
+
+```typescript
+// Node shape property
+const nodes = [
+  { id: 'source', shape: 'arrow' },
+  { id: 'process', shape: 'chevron' },
+  { id: 'sink', shape: 'circle' }
+];
+
+// Theme control
+sankey.setTheme('dark');  // or 'light'
+
+// Available shapes
+type NodeShape = 'rect' | 'arrow' | 'chevron' | 'diamond' | 'circle';
+```
+
+### 🎨 CSS Custom Properties
+
+```css
+/* Override theme variables */
+.sankey-hand-layout {
+  --sankey-background: #1a1a2e;
+  --sankey-node-fill: #4a90d9;
+  --sankey-link-fill: #888;
+  --sankey-text-fill: #fff;
+  --sankey-text-stroke: #000;
+  --sankey-handle-fill: #fff;
+  --sankey-handle-stroke: #333;
+}
+```
+
 ## [0.2.0] - 2025-12-03
 
 ### ✨ New Features
