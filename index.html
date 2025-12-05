@@ -13,6 +13,12 @@
       padding: 20px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f5f5f5;
+      color: #333;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    body.dark-mode {
+      background: #1a1a2e;
+      color: #e0e0e0;
     }
     h1 {
       margin: 0 0 20px;
@@ -23,6 +29,11 @@
       background: white;
       border: 1px solid #ddd;
       border-radius: 8px;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+    body.dark-mode #sankey-container {
+      background: #16213e;
+      border-color: #2a3a5e;
     }
     .controls {
       margin-top: 20px;
@@ -39,9 +50,51 @@
       font-size: 12px;
       color: #666;
     }
+    body.dark-mode .control-group label {
+      color: #aaa;
+    }
     .control-group input {
       width: 150px;
     }
+    
+    /* Theme toggle switch */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .theme-toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: #ccc;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .theme-toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    body.dark-mode .theme-toggle-switch {
+      background: #5a9fcf;
+    }
+    body.dark-mode .theme-toggle-switch::after {
+      transform: translateX(24px);
+    }
+    .theme-toggle-label {
+      font-size: 12px;
+      min-width: 40px;
+    }
+    
     #event-log {
       margin-top: 20px;
       padding: 10px;
@@ -168,6 +221,11 @@
   <div id="sankey-container"></div>
   
   <div class="controls">
+    <div class="control-group theme-toggle">
+      <span class="theme-toggle-label">Light</span>
+      <div class="theme-toggle-switch" id="theme-toggle" title="Toggle dark mode"></div>
+      <span class="theme-toggle-label">Dark</span>
+    </div>
     <div class="control-group">
       <label>Year:</label>
       <select id="year-select">
@@ -416,6 +474,33 @@
     });
 
     log('Sankey diagram initialized');
+    
+    // Theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const THEME_STORAGE_KEY = 'sankey-theme';
+    
+    function setTheme(isDark) {
+      if (isDark) {
+        document.body.classList.add('dark-mode');
+        sankey.setTheme('dark');
+      } else {
+        document.body.classList.remove('dark-mode');
+        sankey.setTheme('light');
+      }
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light');
+      log(`Theme: ${isDark ? 'dark' : 'light'}`);
+    }
+    
+    themeToggle.addEventListener('click', () => {
+      const isDark = !document.body.classList.contains('dark-mode');
+      setTheme(isDark);
+    });
+    
+    // Restore saved theme
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === 'dark') {
+      setTheme(true);
+    }
     
     // Help overlay toggle
     const helpBtn = document.getElementById('help-btn');

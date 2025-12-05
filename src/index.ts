@@ -20,6 +20,8 @@ import { Animator } from './animation/Animator';
 
 // Re-export types for library consumers
 export * from './core/types';
+// Explicitly export easings (export * doesn't always work for const values)
+export { easings } from './core/types';
 export { extractLayout, applyLayout, applyLinkOrders, serializeLayout, parseLayout } from './core/Layout';
 export { Animator } from './animation/Animator';
 
@@ -49,6 +51,9 @@ export interface SankeyInstance {
   // Animation control
   isAnimating(): boolean;
   cancelAnimation(): void;
+  
+  // Theming
+  setTheme(theme: 'light' | 'dark'): void;
   
   // Cleanup
   destroy(): void;
@@ -265,11 +270,15 @@ export function createSankey(
     },
     
     setData(newNodes: Node[], newLinks: Link[]) {
-      // Preserve layout from current nodes and links
+      // Preserve layout positions from current nodes and links
       const currentLayout = extractLayout(graph.nodes, graph.links);
       
-      // Apply current layout to new nodes and links
-      const layoutedNodes = applyLayout(newNodes, currentLayout);
+      // Apply current layout to new nodes (positions, orientation, length)
+      // but preserve the shape from the incoming nodes (user may be changing shapes)
+      const layoutedNodes = applyLayout(newNodes, currentLayout).map((node, i) => ({
+        ...node,
+        shape: newNodes[i].shape, // Use incoming shape, not saved layout shape
+      }));
       const orderedLinks = applyLinkOrders(newLinks, currentLayout);
       
       // Update graph
@@ -297,6 +306,14 @@ export function createSankey(
     
     cancelAnimation() {
       animator.cancel();
+    },
+    
+    setTheme(theme: 'light' | 'dark') {
+      if (theme === 'dark') {
+        svg.classList.add('theme-dark');
+      } else {
+        svg.classList.remove('theme-dark');
+      }
     },
     
     destroy() {

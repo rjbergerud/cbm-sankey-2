@@ -1,121 +1,160 @@
-/* Sankey Hand Layout - Default Theme */
+/* Sankey Hand Layout - Theme System */
+
+/* ============================================================================
+   CSS Custom Properties (Theme Variables)
+   ============================================================================ */
 
 .sankey-hand-layout {
+  /* Light theme (default) */
+  --sankey-node-fill: #6fc4f9;
+  --sankey-node-fill-hover: #3d6a85;
+  --sankey-node-fill-active: #2c5570;
+  --sankey-node-text: #333333;
+  --sankey-node-text-stroke: #f3f3f318;
+  --sankey-node-base-fill: #888888;
+  --sankey-node-base-opacity: 0.45;
+  
+  --sankey-link-fill: #888888;
+  --sankey-link-opacity: 0.45;
+  --sankey-link-opacity-hover: 0.7;
+  --sankey-link-highlight: #666666;
+  
+  --sankey-selection-color: #ff6b35;
+  --sankey-handle-color: rgba(0, 0, 0, 0.3);
+  --sankey-handle-hover: rgba(255, 107, 53, 0.6);
+  
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
 }
 
+/* Dark theme */
+.sankey-hand-layout.theme-dark {
+  --sankey-node-fill: #5a9fcf;
+  --sankey-node-fill-hover: #6db3e3;
+  --sankey-node-fill-active: #4a8fc0;
+  --sankey-node-text: #ffffff;
+  --sankey-node-text-stroke: #000000;
+  --sankey-node-base-fill: #9ab8cc;
+  --sankey-node-base-opacity: 0.4;
+  
+  --sankey-link-fill: #9ab8cc;
+  --sankey-link-opacity: 0.4;
+  --sankey-link-opacity-hover: 0.65;
+  --sankey-link-highlight: #b0c8d8;
+  
+  --sankey-selection-color: #ff8855;
+  --sankey-handle-color: rgba(255, 255, 255, 0.3);
+  --sankey-handle-hover: rgba(255, 136, 85, 0.7);
+}
+
+/* ============================================================================
+   Node Styles
+   ============================================================================ */
+
 /* Node base rectangle - where links attach (matches link color for seamless flow) */
 .sankey-hand-layout .node .node-base {
-  fill: #999;
-  fill-opacity: 0.5;
+  fill: var(--sankey-node-base-fill);
+  fill-opacity: var(--sankey-node-base-opacity);
   stroke: none;
   cursor: grab;
   transition: fill 0.15s ease, fill-opacity 0.15s ease;
 }
 
-/* Node shape overlay - sits on top of base, same color by default */
+/* Node shape overlay - sits on top of base */
 .sankey-hand-layout .node .node-shape-overlay {
-  fill: steelblue;
+  fill: var(--sankey-node-fill);
   stroke: none;
   cursor: grab;
-  pointer-events: none; /* Let clicks pass through to base */
+  pointer-events: none;
   transition: fill 0.15s ease;
 }
 
-/* Legacy support for rect directly (for rect-shaped nodes) */
-.sankey-hand-layout .node rect {
-  fill: steelblue;
-  stroke: none;
-  stroke-width: 1px;
-  cursor: grab;
-  transition: fill 0.15s ease;
+/* For rect-shaped nodes (no overlay) */
+.sankey-hand-layout .node-shape--rect .node-base {
+  fill: var(--sankey-node-fill);
+  fill-opacity: 1;
 }
 
-.sankey-hand-layout .node:hover .node-base,
-.sankey-hand-layout .node:hover .node-shape-overlay,
-.sankey-hand-layout .node:hover rect {
-  fill: #4682b4cc;
+.sankey-hand-layout .node:hover .node-base {
+  fill: var(--sankey-node-fill-hover);
+}
+
+.sankey-hand-layout .node:hover .node-shape-overlay {
+  fill: var(--sankey-node-fill-hover);
 }
 
 .sankey-hand-layout .node.dragging .node-base,
-.sankey-hand-layout .node.dragging .node-shape-overlay,
-.sankey-hand-layout .node.dragging rect {
+.sankey-hand-layout .node.dragging .node-shape-overlay {
   cursor: grabbing;
-  fill: #2c5aa0;
+  fill: var(--sankey-node-fill-active);
 }
 
 .sankey-hand-layout .node text {
   font-size: 12px;
-  fill: #fff;
+  font-weight: 500;
+  fill: var(--sankey-node-text);
+  stroke: var(--sankey-node-text-stroke);
+  stroke-width: 3px;
+  paint-order: stroke fill;
   pointer-events: none;
   user-select: none;
 }
 
-/* Shape-specific styles - can be customized per shape type */
-.sankey-hand-layout .node-shape--arrow .node-shape-overlay {
-  /* Arrow nodes can have custom styling */
-}
+/* ============================================================================
+   Link Styles
+   ============================================================================ */
 
-.sankey-hand-layout .node-shape--chevron .node-shape-overlay {
-  /* Chevron nodes */
-}
-
-.sankey-hand-layout .node-shape--diamond .node-shape-overlay {
-  /* Diamond nodes */
-}
-
-.sankey-hand-layout .node-shape--circle .node-shape-overlay {
-  /* Circle/ellipse nodes */
-}
-
-/* Link styles - filled shapes */
 .sankey-hand-layout .link {
-  fill: #999;
-  fill-opacity: 0.5;
+  fill: var(--sankey-link-fill);
+  fill-opacity: var(--sankey-link-opacity);
   stroke: none;
   transition: fill-opacity 0.15s ease;
 }
 
 .sankey-hand-layout .link:hover {
-  fill-opacity: 0.8;
+  fill-opacity: var(--sankey-link-opacity-hover);
 }
 
 .sankey-hand-layout .link.highlighted {
   fill-opacity: 0.9;
-  fill: #666;
+  fill: var(--sankey-link-highlight);
 }
 
-/* Selection states */
+/* ============================================================================
+   Selection States
+   ============================================================================ */
+
 .sankey-hand-layout .node.selected .node-base,
-.sankey-hand-layout .node.selected .node-shape-overlay,
-.sankey-hand-layout .node.selected rect {
-  stroke: #ff6b35;
+.sankey-hand-layout .node.selected .node-shape-overlay {
+  stroke: var(--sankey-selection-color);
   stroke-width: 2px;
 }
 
 .sankey-hand-layout .link.selected {
-  fill: #ff6b35;
+  fill: var(--sankey-selection-color);
   fill-opacity: 0.9;
 }
 
-/* Resize handle */
+/* ============================================================================
+   Resize Handles
+   ============================================================================ */
+
 .sankey-hand-layout .resize-handle {
   fill: transparent;
   stroke: none;
   cursor: ew-resize;
   opacity: 0;
-  pointer-events: none;  /* Don't capture events when invisible */
+  pointer-events: none;
   transition: opacity 0.15s ease, fill 0.15s ease;
 }
 
 .sankey-hand-layout .node:hover .resize-handle {
   opacity: 1;
-  fill: rgba(0, 0, 0, 0.3);
-  pointer-events: auto;  /* Enable events when visible */
+  fill: var(--sankey-handle-color);
+  pointer-events: auto;
 }
 
 .sankey-hand-layout .resize-handle:hover {
-  fill: rgba(255, 107, 53, 0.6);
+  fill: var(--sankey-handle-hover);
 }
 
 /* Vertical nodes need different cursor */
@@ -125,14 +164,27 @@
 }
 
 .sankey-hand-layout .node.resizing .node-base,
-.sankey-hand-layout .node.resizing .node-shape-overlay,
-.sankey-hand-layout .node.resizing rect {
-  stroke: #ff6b35;
+.sankey-hand-layout .node.resizing .node-shape-overlay {
+  stroke: var(--sankey-selection-color);
   stroke-width: 2px;
 }
 
 .sankey-hand-layout .node.resizing .resize-handle {
   opacity: 1;
-  fill: rgba(255, 107, 53, 0.8);
+  fill: var(--sankey-handle-hover);
+}
+
+/* ============================================================================
+   Link Order Handles
+   ============================================================================ */
+
+.sankey-hand-layout .link-order-handle {
+  fill: var(--sankey-handle-color);
+  cursor: grab;
+  transition: fill 0.15s ease;
+}
+
+.sankey-hand-layout .link-order-handle:hover {
+  fill: var(--sankey-handle-hover);
 }
 
