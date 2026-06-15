@@ -165,8 +165,10 @@ export function renderNodes(
     const isExisting = nodeGroup !== null;
     
     // Calculate dimensions based on orientation
+    // Ensure nodes are tall enough for text labels
+    const minThicknessForFont = node.label ? options.fontSize + 4 : 0;
     const length = node.length ?? options.nodeLength;
-    const thickness = Math.max(node.thickness, options.minNodeThickness);
+    const thickness = Math.max(node.thickness, options.minNodeThickness, minThicknessForFont);
     const isHorizontal = node.orientation === 0 || node.orientation === 180;
     const width = isHorizontal ? length : thickness;
     const height = isHorizontal ? thickness : length;
@@ -253,6 +255,7 @@ export function renderNodes(
       }
       text.setAttribute('x', String(node.x));
       text.setAttribute('y', String(node.y));
+      text.style.fontSize = `${options.fontSize}px`;
       text.textContent = node.label;
     } else if (text) {
       text.remove();

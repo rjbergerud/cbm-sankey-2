@@ -102,6 +102,8 @@ interface SankeyOptions {
   curvature: number;       // Bezier curvature 0-1 (default: 0.5)
   nodeLength: number;      // Default node length (default: 20)
   pathStyle: 'bezier' | 'constantWidth';  // Path rendering style
+  fontSize: number;            // Font size for node labels in px (default: 12)
+  enableRotation: boolean;     // Enable double-click rotation (default: true)
   transitionDuration: number;  // Animation duration in ms (default: 300, 0 = instant)
   transitionEasing: (t: number) => number;  // Easing function
 }

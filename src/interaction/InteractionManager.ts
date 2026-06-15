@@ -20,7 +20,7 @@ export interface InteractionCallbacks {
 export class InteractionManager {
   private svg: SVGSVGElement;
   private dragHandler: DragHandler;
-  private rotateHandler: RotateHandler;
+  private rotateHandler: RotateHandler | null = null;
   private resizeHandler: ResizeHandler;
   private linkOrderHandler: LinkOrderHandler | null = null;
 
@@ -39,10 +39,12 @@ export class InteractionManager {
       onDragEnd: callbacks.onDragEnd,
     });
 
-    // Initialize rotate handler
-    this.rotateHandler = new RotateHandler(svg, nodes, {
-      onRotate: callbacks.onRotate,
-    });
+    // Initialize rotate handler (if enabled)
+    if (options.enableRotation) {
+      this.rotateHandler = new RotateHandler(svg, nodes, {
+        onRotate: callbacks.onRotate,
+      });
+    }
 
     // Initialize resize handler
     this.resizeHandler = new ResizeHandler(svg, nodes, {
@@ -63,7 +65,7 @@ export class InteractionManager {
    */
   updateNodes(nodes: ComputedNode[], links?: Link[]): void {
     this.dragHandler.updateNodes(nodes);
-    this.rotateHandler.updateNodes(nodes);
+    this.rotateHandler?.updateNodes(nodes);
     this.resizeHandler.updateNodes(nodes);
     if (this.linkOrderHandler && links) {
       this.linkOrderHandler.updateNodes(nodes, links);
@@ -75,7 +77,7 @@ export class InteractionManager {
    */
   destroy(): void {
     this.dragHandler.destroy();
-    this.rotateHandler.destroy();
+    this.rotateHandler?.destroy();
     this.resizeHandler.destroy();
     this.linkOrderHandler?.destroy();
   }

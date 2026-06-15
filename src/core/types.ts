@@ -78,6 +78,10 @@ export interface SankeyOptions {
   minNodeLength: number;
   /** Minimum bezier control point distance to prevent path artifacts at short distances */
   minControlPointDistance: number;
+  /** Font size in pixels for node labels (default: 12) */
+  fontSize: number;
+  /** Enable double-click rotation on nodes (default: true) */
+  enableRotation: boolean;
   /** Animation duration in milliseconds (0 = instant, no animation) */
   transitionDuration: number;
   /** Easing function for animations */
@@ -104,6 +108,8 @@ export const DEFAULT_OPTIONS: SankeyOptions = {
   minNodeThickness: 4,
   minNodeLength: 10,
   minControlPointDistance: 20,
+  fontSize: 12,
+  enableRotation: true,
   transitionDuration: 300,
   transitionEasing: easings.easeOut,
 };

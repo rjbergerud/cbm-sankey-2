@@ -90,6 +90,18 @@ export class RotateHandler {
    * Clean up event listeners
    */
   destroy(): void {
+    // Remove all event listeners
+    const nodeElements = this.svg.querySelectorAll('.node');
+    nodeElements.forEach(el => {
+      const nodeId = el.getAttribute('data-node-id');
+      if (!nodeId) return;
+
+      const handler = this.boundHandlers.get(nodeId);
+      if (handler) {
+        el.removeEventListener('dblclick', handler);
+      }
+    });
+
     // Clear handler references
     this.boundHandlers.clear();
   }

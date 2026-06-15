@@ -20,7 +20,7 @@
   --sankey-link-highlight: #666666;
   
   --sankey-selection-color: #ff6b35;
-  --sankey-handle-color: rgba(0, 0, 0, 0.3);
+  --sankey-handle-color: rgba(0, 0, 0, 0);
   --sankey-handle-hover: rgba(255, 107, 53, 0.6);
   
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -42,7 +42,7 @@
   --sankey-link-highlight: #b0c8d8;
   
   --sankey-selection-color: #ff8855;
-  --sankey-handle-color: rgba(255, 255, 255, 0.3);
+  --sankey-handle-color: rgba(255, 255, 255, 0);
   --sankey-handle-hover: rgba(255, 136, 85, 0.7);
 }
 
@@ -96,7 +96,6 @@
 }
 
 .sankey-hand-layout .node text {
-  font-size: 12px;
   font-weight: 500;
   fill: var(--sankey-node-text);
   stroke: var(--sankey-node-text-stroke);

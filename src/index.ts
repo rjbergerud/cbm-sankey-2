@@ -266,6 +266,11 @@ export function createSankey(
     setOption<K extends keyof SankeyOptions>(key: K, value: SankeyOptions[K]) {
       options[key] = value;
       animator.updateOptions(options);
+      // Recreate interaction manager when toggling features that affect handler setup
+      if (key === 'enableRotation') {
+        interactionManager?.destroy();
+        interactionManager = null;
+      }
       render();
     },
     

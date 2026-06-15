@@ -256,6 +256,10 @@
       <input type="range" id="duration" min="0" max="1000" step="50" value="300">
     </div>
     <div class="control-group">
+      <label>Font Size: <span id="font-size-value">12</span>px</label>
+      <input type="range" id="font-size" min="8" max="32" step="1" value="12">
+    </div>
+    <div class="control-group">
       <label>Node Shape:</label>
       <select id="node-shape">
         <option value="rect" selected>Rectangle</option>
@@ -275,6 +279,9 @@
         <option value="products">Products</option>
         <option value="soil">Soil</option>
       </select>
+    </div>
+    <div class="control-group">
+      <label><input type="checkbox" id="enable-rotation" checked> Enable Rotation</label>
     </div>
     <div class="control-group" style="border-left: 1px solid #ddd; padding-left: 15px; margin-left: 5px;">
       <label>Layout:</label>
@@ -384,6 +391,7 @@
         pathStyle: 'constantWidth',
         transitionDuration: 300,
         transitionEasing: easings.easeOut,
+        enableRotation: true,
       }
     });
 
@@ -435,6 +443,17 @@
       document.getElementById('duration-value').textContent = value;
       sankey.setOption('transitionDuration', value);
       log(`Animation duration: ${value}ms`);
+    });
+
+    document.getElementById('font-size').addEventListener('input', (e) => {
+      const value = parseInt(e.target.value);
+      document.getElementById('font-size-value').textContent = value;
+      sankey.setOption('fontSize', value);
+    });
+
+    document.getElementById('enable-rotation').addEventListener('change', (e) => {
+      sankey.setOption('enableRotation', e.target.checked);
+      log(`Rotation ${e.target.checked ? 'enabled' : 'disabled'}`);
     });
 
     // Node shape controls
