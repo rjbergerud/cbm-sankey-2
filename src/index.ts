@@ -1,3 +1,5 @@
+// Bundle the default stylesheet into dist/style.css (consumers: import 'sankey-hand-layout/style.css')
+import './styles/default.css';
 import {
   Node,
   Link,
