@@ -1,6 +1,6 @@
 {
   "name": "sankey-hand-layout",
-  "version": "0.3.3",
+  "version": "0.4.1",
   "description": "A user-driven layout Sankey diagram library with drag, rotate, and resize interactions",
   "type": "module",
   "main": "./dist/sankey-hand-layout.umd.cjs",
