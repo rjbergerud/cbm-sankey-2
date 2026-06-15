@@ -71,7 +71,25 @@ interface Node {
   y: number;               // Y position
   orientation: 0 | 90 | 180 | 270;  // Rotation in degrees
   length?: number;         // Size along flow axis
+  shape?: 'rect' | 'arrow' | 'chevron' | 'diamond' | 'circle';  // Node shape (default: 'rect')
 }
+```
+
+#### Node Shapes
+
+- **`rect`** (default) - Simple rectangle
+- **`arrow`** - Directional arrow pointing in the orientation direction
+- **`chevron`** - V-notched shape pointing in the orientation direction
+- **`diamond`** - Diamond shape for decision points
+- **`circle`** - Circular/elliptical shape
+
+```typescript
+const nodes = [
+  { id: 'start', label: 'Start', x: 100, y: 100, orientation: 0, shape: 'circle' },
+  { id: 'process', label: 'Process', x: 300, y: 100, orientation: 0, shape: 'rect' },
+  { id: 'decision', label: 'Decision?', x: 500, y: 100, orientation: 0, shape: 'diamond' },
+  { id: 'end', label: 'End', x: 700, y: 100, orientation: 0, shape: 'arrow' },
+];
 ```
 
 Node orientation determines where links attach:

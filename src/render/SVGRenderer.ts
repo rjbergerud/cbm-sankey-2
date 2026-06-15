@@ -2,20 +2,21 @@ import { ComputedNode, ComputedLink, SankeyOptions, NodeShape } from '../core/ty
 import { toClassName } from '../core/Graph';
 
 /**
- * Calculate the inset depth for shaped nodes (how much the shape is inset from edges)
- * This leaves room for the base rectangle to show where links attach
+ * Calculate the inset depth for shaped nodes
+ * For directional shapes (arrow/chevron), inset only in flow direction for flush appearance
+ * Note: This is now primarily used for circle; arrow/chevron insets are handled separately
  */
 export function getShapeInset(shape: NodeShape, width: number, height: number): number {
   const minDim = Math.min(width, height);
   switch (shape) {
     case 'arrow':
-      return minDim * 0.4; // Match the tipDepth
+      return minDim * 0.2; // Inset for arrow point
     case 'chevron':
-      return minDim * 0.35; // Match the tipDepth
+      return minDim * 0.15; // Inset for chevron point
     case 'diamond':
-      return Math.min(width, height) * 0.5; // Diamond extends to edges
+      return Math.min(width, height) * 0.5;
     case 'circle':
-      return Math.min(width, height) * 0.15; // Small inset for circles
+      return Math.min(width, height) * 0.15;
     default:
       return 0;
   }
