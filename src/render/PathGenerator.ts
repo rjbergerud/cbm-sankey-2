@@ -329,31 +329,52 @@ function generateLinkPath(
 
 /**
  * Calculate link offsets for stacking on a node edge
+ * Sorts by explicit order first, then by target/source node position to reduce crossings
  */
 function calculateLinkOffsets(
   links: Link[],
   nodeId: string,
   side: 'in' | 'out',
   totalValue: number,
-  options: SankeyOptions
+  options: SankeyOptions,
+  nodes?: ComputedNode[]
 ): Map<string, { offset: number; thickness: number }> {
   const offsets = new Map<string, { offset: number; thickness: number }>();
-  
-  const relevantLinks = side === 'out' 
+
+  const relevantLinks = side === 'out'
     ? links.filter(l => l.source === nodeId)
     : links.filter(l => l.target === nodeId);
-  
+
   if (totalValue === 0) {
     return offsets;
   }
-  
-  // Sort links by their order property (sourceOrder for outgoing, targetOrder for incoming)
+
+  // Sort links by explicit order, then by perpendicular position of target/source for crossing reduction
   const sortedLinks = [...relevantLinks].sort((a, b) => {
     const orderA = side === 'out' ? (a.sourceOrder ?? Infinity) : (a.targetOrder ?? Infinity);
     const orderB = side === 'out' ? (b.sourceOrder ?? Infinity) : (b.targetOrder ?? Infinity);
-    // If both have no order, maintain original array order
-    if (orderA === Infinity && orderB === Infinity) return 0;
-    return orderA - orderB;
+
+    // Primary: explicit order (if provided)
+    if (orderA !== Infinity && orderB !== Infinity) return orderA - orderB;
+    if (orderA !== Infinity) return -1;
+    if (orderB !== Infinity) return 1;
+
+    // Secondary: sort by position of other node (for crossing reduction)
+    if (nodes) {
+      const otherIdA = side === 'out' ? a.target : a.source;
+      const otherIdB = side === 'out' ? b.target : b.source;
+      const nodeA = nodes.find(n => n.id === otherIdA);
+      const nodeB = nodes.find(n => n.id === otherIdB);
+
+      if (nodeA && nodeB) {
+        // Sort by perpendicular coordinate (y for horizontal flow, x for vertical)
+        // Assuming horizontal flow (most common case); adjust based on orientation if needed
+        return nodeA.y - nodeB.y;
+      }
+    }
+
+    // Fallback: maintain original array order
+    return 0;
   });
   
   let cumulative = 0;
@@ -383,8 +404,8 @@ export function computeLinkPaths(
   const inOffsets = new Map<string, Map<string, { offset: number; thickness: number }>>();
   
   for (const node of nodes) {
-    outOffsets.set(node.id, calculateLinkOffsets(links, node.id, 'out', node.outgoingValue, options));
-    inOffsets.set(node.id, calculateLinkOffsets(links, node.id, 'in', node.incomingValue, options));
+    outOffsets.set(node.id, calculateLinkOffsets(links, node.id, 'out', node.outgoingValue, options, nodes));
+    inOffsets.set(node.id, calculateLinkOffsets(links, node.id, 'in', node.incomingValue, options, nodes));
   }
   
   return links.map(link => {
