@@ -79,6 +79,10 @@ export function createSankey(
     links = applyLinkOrders(links, config.layout);
   }
   
+  // Track which elements already have event listeners to avoid duplicates
+  const nodesWithListeners = new Set<string>();
+  const linksWithListeners = new Set<string>();
+  
   // Create graph and validate
   let graph = createGraph(nodes, links);
   
@@ -109,7 +113,6 @@ export function createSankey(
     computedLinks = computeLinkPaths(computedNodes, graph.links, options);
     renderNodes(svg, computedNodes, options);
     renderLinks(svg, computedLinks, options);
-    attachEventListeners();
   }
 
   /**
@@ -190,19 +193,37 @@ export function createSankey(
    * Full render (compute, render, update interactions)
    */
   function render() {
+    // Clear listener tracking before rerender
+    const currentNodeIds = new Set<string>();
+    const currentLinkIds = new Set<string>();
+    
+    computedNodes.forEach(n => currentNodeIds.add(n.id));
+    computedLinks.forEach(l => currentLinkIds.add(l.id));
+    
+    // Remove tracking for nodes/links that are about to be deleted
+    nodesWithListeners.forEach(id => {
+      if (!currentNodeIds.has(id)) nodesWithListeners.delete(id);
+    });
+    linksWithListeners.forEach(id => {
+      if (!currentLinkIds.has(id)) linksWithListeners.delete(id);
+    });
+    
     computeAndRender();
+    attachEventListeners();
     updateInteractions();
   }
   
   /**
-   * Attach DOM event listeners for hover/click events
+   * Attach DOM event listeners for hover/click events (only on new elements)
    */
   function attachEventListeners() {
-    // Node events
+    // Node events - only attach to nodes that don't have listeners yet
     const nodeElements = svg.querySelectorAll('.node');
     nodeElements.forEach(el => {
       const nodeId = el.getAttribute('data-node-id');
-      if (!nodeId) return;
+      if (!nodeId || nodesWithListeners.has(nodeId)) return;
+      
+      nodesWithListeners.add(nodeId);
       
       el.addEventListener('click', () => {
         const node = getNode(graph, nodeId);
@@ -219,11 +240,13 @@ export function createSankey(
       });
     });
     
-    // Link events
+    // Link events - only attach to links that don't have listeners yet
     const linkElements = svg.querySelectorAll('.link');
     linkElements.forEach(el => {
       const linkId = el.getAttribute('data-link-id');
-      if (!linkId) return;
+      if (!linkId || linksWithListeners.has(linkId)) return;
+      
+      linksWithListeners.add(linkId);
       
       el.addEventListener('click', () => {
         const link = getLink(graph, linkId);
